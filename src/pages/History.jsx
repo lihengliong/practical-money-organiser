@@ -1,5 +1,5 @@
 const History = () => {
-    return <h2>History (past expenses settled)</h2>;
+    return <h2>History</h2>;
 };
 
 export default History
