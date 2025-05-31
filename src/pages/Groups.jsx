@@ -109,7 +109,23 @@ function Groups() {
           group.members && group.members.includes(user.email)
         );
         
-        setGroups(userGroups);
+        // Fetch display names for group members
+        const enrichedGroups = await Promise.all(
+          userGroups.map(async group => {
+            const memberProfiles = await Promise.all(
+              group.members.map(async email => {
+                const profile = await fetchUserProfile(email);
+                return { email, displayName: profile.displayName };
+              })
+            );
+            return {
+              ...group,
+              memberProfiles,
+            };
+          })
+        );
+
+        setGroups(enrichedGroups);
       } catch (error) {
         console.error('Error fetching groups:', error);
         setError('Error loading groups');
@@ -362,11 +378,18 @@ function Groups() {
                 >
                   <h3 className="group-name">{group.name}</h3>
                   <p className="group-member-count">
-                    <strong>{group.members.length}</strong> members
+                    <strong>{group.memberProfiles ? group.memberProfiles.length : group.members.length}</strong> members
                   </p>
                   <p className="group-member-list">
-                    {group.members.slice(0, 3).join(', ')}
-                    {group.members.length > 3 && ` +${group.members.length - 3} more`}
+                    {group.memberProfiles
+                      ? group.memberProfiles
+                          .slice(0, 3)
+                          .map(m => m.displayName)
+                          .join(', ')
+                      : group.members.slice(0, 3).join(', ')}
+                    {group.memberProfiles
+                      ? (group.memberProfiles.length > 3 && ` +${group.memberProfiles.length - 3} more`)
+                      : (group.members.length > 3 && ` +${group.members.length - 3} more`)}
                   </p>
                   <small className="group-creator">
                     Created by: {group.createdBy}

@@ -11,6 +11,12 @@ const Activities = () => {
   const [user] = useAuthState(auth);
   
   const group = location.state?.group;
+
+  const memberDisplay = (member, showEmail = true) => {
+    const profile = group.memberProfiles?.find(p => p.email === member);
+    if (!profile) return member;
+    return showEmail ? `${profile.displayName} (${profile.email})` : profile.displayName;
+  };
   
   const [expenses, setExpenses] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -225,7 +231,11 @@ const Activities = () => {
       <div className="activities-header">
         <div>
           <h1>{group.name}</h1>
-          <p>{group.members.length} members: {group.members.join(', ')}</p>
+          <p>{group.memberProfiles?.length || group.members.length} members: {
+            group.memberProfiles
+              ? group.memberProfiles.map(m => m.displayName).join(', ')
+              : group.members.join(', ')
+          }</p>
         </div>
         <button onClick={() => navigate('/groups')} className="back-button">
           ← Back to Groups
@@ -261,7 +271,7 @@ const Activities = () => {
           >
             <option value="">Who paid?</option>
             {group.members.map(member => (
-              <option key={member} value={member}>{member}</option>
+              <option key={member} value={member}>{memberDisplay(member)}</option>
             ))}
           </select>
           <button onClick={addExpense} className="add-expense-btn">
@@ -286,7 +296,7 @@ const Activities = () => {
                   key={member} 
                   className={`balance-item ${balance === 0 ? 'neutral' : balance > 0 ? 'positive' : 'negative'}`}
                 >
-                  <div className="balance-name">{member}</div>
+                  <div className="balance-name">{memberDisplay(member)}</div>
                   <div className="balance-amount">
                     ${Math.abs(balance).toFixed(2)} 
                     <span className="balance-status">
@@ -320,7 +330,7 @@ const Activities = () => {
                     return (
                       <div key={member} className="settle-up-item">
                         <span>
-                          <strong>{member}</strong> owes ${amountOwed.toFixed(2)} to <strong>{creditor}</strong>
+                          <strong>{memberDisplay(member)}</strong> owes ${amountOwed.toFixed(2)} to <strong>{memberDisplay(creditor)}</strong>
                         </span>
                         <button 
                           onClick={() => recordPayment(member, creditor, amountOwed)}
@@ -344,7 +354,7 @@ const Activities = () => {
                   <div className="expense-content">
                     <div>
                       <div className="expense-title">{expense.description}</div>
-                      <div className="expense-payer">Paid by: {expense.paidBy}</div>
+                      <div className="expense-payer">Paid by: {memberDisplay(expense.paidBy)}</div>
                     </div>
                     <div className="expense-amount">
                       <div className="expense-total">${expense.amount}</div>
@@ -367,7 +377,7 @@ const Activities = () => {
           <div className="payment-history-container">
             {payments.map(payment => (
               <div key={payment.id} className="payment-item">
-                <strong>{payment.fromUser}</strong> paid <strong>{payment.toUser}</strong> ${payment.amount}
+                <strong>{memberDisplay(payment.fromUser, false)}</strong> paid <strong>{memberDisplay(payment.toUser, false)}</strong> ${payment.amount}
                 <small className="payment-date">
                   {payment.paymentDate.toDate?.().toLocaleDateString() || 'Recently'}
                 </small>
