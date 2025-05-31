@@ -1,9 +1,11 @@
+import './footer-styles.css';
+
 function Footer() {
     return(
-        <footer>
+        <footer className="footer">
             <p>&copy; {new Date().getFullYear()} Practical Money Organiser</p>
         </footer>
     );
 }
 
-export default Footer
+export default Footer;
