@@ -1,7 +1,6 @@
 import './App.css'
 import { Auth } from './components/auth'
 import Friends from './pages/Friends'
-import ExpenseMVP from './pages/ExpenseMVP'
 import Groups from './pages/Groups'
 import Activities from './pages/Activities'
 import Notifications  from './pages/Notifications'
@@ -18,7 +17,8 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/friends" element={<Friends />} />
           <Route path="/groups" element={<Groups />} />
-          <Route path="/activities" element={<Activities />} />
+          <Route path="/activities/:groupId" element={<Activities />} />
+          <Route path="/history" element={<History />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/analytics" element={<Analytics />} />
         </Route>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../config/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import './stylesheets/auth.css';
 
 export const Auth = () => {
     const [email, setEmail] = useState("");
@@ -31,7 +32,7 @@ export const Auth = () => {
       try {
         setLoading(true);
         setError("");
-        await signInWithEmailAndPassword(auth, email, password); // ✅ Use signInWithEmailAndPassword
+        await signInWithEmailAndPassword(auth, email, password);// Sign in existing user
         // User already exists in Firestore, no need to create again
         navigate("/groups");
       } catch (err) {
@@ -47,8 +48,12 @@ export const Auth = () => {
       try {
         setLoading(true);
         setError("");
-        const res = await createUserWithEmailAndPassword(auth, email, password); // ✅ Create new user
-        await createUserInFirestore(res.user); // ✅ Save to Firestore
+        const res = await createUserWithEmailAndPassword(auth, email, password); // Create new user
+        const displayName = prompt("Enter a display name:");
+        if (displayName) {
+          await res.user.updateProfile({ displayName });
+        }
+        await createUserInFirestore(res.user, displayName); // Save to Firestore
         navigate("/groups");
       } catch (err) {
         setError(err.message);
@@ -83,14 +88,14 @@ export const Auth = () => {
       }
     }
 
-    const createUserInFirestore = async (user) => {
+    const createUserInFirestore = async (user, displayName = null) => {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-    
+
       if (!userSnap.exists()) {
         await setDoc(userRef, {
           email: user.email,
-          displayName: user.displayName || null,
+          displayName: displayName || user.displayName || null,
           createdAt: new Date(),
         });
       }
@@ -107,61 +112,70 @@ export const Auth = () => {
     };
 
     return (
-      <div>
-        {!user ? (
-          <>
-            <h2 className="login-prompt">
-              {isLogin ? "Please log in to continue" : "Create your account"}
-            </h2>
-            
-            {error && <div style={{color: 'red', margin: '10px 0'}}>{error}</div>}
-            
-            <form onSubmit={handleSubmit}>
-              <input 
-                type="email"
-                placeholder="Email..."
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <input 
-                placeholder="Password..."
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button type="submit" disabled={loading}>
-                {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
-              </button>
-            </form>
+      <div className="auth-page-wrapper">
+        <div className="auth-container">
+          {!user ? (
+            <>
+              <h1>Practical Money Organiser</h1>
+              <h2 className="login-prompt">
+                {isLogin ? "Please log in" : "Create your account"}
+              </h2>
+              
+              {error && <div className="error-message">{error}</div>}
+              
+              <form onSubmit={handleSubmit} className="auth-form">
+                <input 
+                  type="email"
+                  placeholder="Email..."
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="auth-input"
+                  required
+                />
+                <input 
+                  placeholder="Password..."
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="auth-input"
+                  required
+                />
+                <button type="submit" disabled={loading} className="auth-button">
+                  {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
+                </button>
+              </form>
 
-            <div style={{margin: '10px 0'}}>
-              <button onClick={signInWithGoogle} disabled={loading}>
+              <div className="auth-divider">
+                <span>or</span>
+              </div>
+
+              <button onClick={signInWithGoogle} disabled={loading} className="google-button">
                 {loading ? "Loading..." : "Sign In With Google"}
               </button>
-            </div>
 
-            <p>
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <button 
-                type="button" 
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError(""); // Clear any errors when switching
-                }}
-                style={{background: 'none', border: 'none', color: 'blue', textDecoration: 'underline', cursor: 'pointer'}}
-              >
-                {isLogin ? "Sign Up" : "Sign In"}
-              </button>
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="welcome-message">Welcome, {user.displayName || user.email}</h2>
-            <button onClick={logout}>Log out</button>
-          </>
-        )}
+              <p className="toggle-mode">
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError(""); // Clear any errors when switching
+                  }}
+                  className="toggle-link"
+                >
+                  {isLogin ? "Sign Up" : "Sign In"}
+                </button>
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="welcome-message">
+                Welcome, {user.displayName ? `${user.displayName} (${user.email})` : user.email}
+              </h2>
+              <button onClick={logout} className="logout-button">Log out</button>
+            </>
+          )}
+        </div>
       </div>
-    )
+    );
 };

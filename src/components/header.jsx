@@ -3,7 +3,7 @@ import { auth } from "../config/firebase";
 import { useNavigate } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from "react";
-import './header-styles.css';
+import './stylesheets/header.css';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const Header = () => {
       <nav className="nav-links">
         <Link to="/friends">Friends</Link>
         <Link to="/groups">Groups</Link>
-        <Link to="/activities">Activities</Link>
+        <Link to="/history">History</Link>
         <Link to="/notifications">Notifications</Link>
         <Link to="/analytics">Analytics</Link>
         {user && (
