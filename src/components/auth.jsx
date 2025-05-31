@@ -31,7 +31,7 @@ export const Auth = () => {
       try {
         setLoading(true);
         setError("");
-        const res = await signInWithEmailAndPassword(auth, email, password); // ✅ Use signInWithEmailAndPassword
+        await signInWithEmailAndPassword(auth, email, password); // ✅ Use signInWithEmailAndPassword
         // User already exists in Firestore, no need to create again
         navigate("/groups");
       } catch (err) {
