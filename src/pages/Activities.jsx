@@ -31,17 +31,17 @@ const Activities = () => {
     console.log('User:', user?.email);
 
     if (!group) {
-      console.log('❌ No group - redirecting');
+      console.log('No group - redirecting');
       setLoading(false);
       return;
     }
 
     if (!user) {
-      console.log('⏳ Waiting for user...');
+      console.log('Waiting for user...');
       return;
     }
 
-    console.log('✅ Starting data fetch...');
+    console.log('Starting data fetch...');
     fetchData();
   }, [group, user]);
 
@@ -61,7 +61,7 @@ const Activities = () => {
         id: doc.id, 
         ...doc.data() 
       }));
-      console.log('✅ Expenses fetched:', expensesList.length);
+      console.log('Expenses fetched:', expensesList.length);
       setExpenses(expensesList);
 
       const paymentsQuery = query(
@@ -73,15 +73,15 @@ const Activities = () => {
         id: doc.id, 
         ...doc.data() 
       }));
-      console.log('✅ Payments fetched:', paymentsList.length);
+      console.log('Payments fetched:', paymentsList.length);
       setPayments(paymentsList);
 
     } catch (error) {
-      console.error('❌ Error fetching data:', error);
+      console.error('Error fetching data:', error);
       setError('Error loading data: ' + error.message);
     } finally {
       setLoading(false);
-      console.log('✅ Data fetch complete');
+      console.log('Data fetch complete');
     }
   };
 
@@ -136,7 +136,7 @@ const Activities = () => {
         status: 'completed'
       });
 
-      console.log('✅ Payment recorded, refreshing data...');
+      console.log('Payment recorded, refreshing data...');
       
       setTimeout(() => {
         fetchData();
@@ -144,7 +144,7 @@ const Activities = () => {
       
       alert('Payment recorded successfully!');
     } catch (error) {
-      console.error('❌ Error recording payment:', error);
+      console.error('Error recording payment:', error);
       setError('Error recording payment');
     }
   };
@@ -330,7 +330,7 @@ const Activities = () => {
                     return (
                       <div key={member} className="settle-up-item">
                         <span>
-                          <strong>{memberDisplay(member)}</strong> owes ${amountOwed.toFixed(2)} to <strong>{memberDisplay(creditor)}</strong>
+                          <strong>{memberDisplay(member, false)}</strong> owes ${amountOwed.toFixed(2)} to <strong>{memberDisplay(creditor, false)}</strong>
                         </span>
                         <button 
                           onClick={() => recordPayment(member, creditor, amountOwed)}
