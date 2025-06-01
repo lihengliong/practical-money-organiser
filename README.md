@@ -16,8 +16,8 @@ Recommended version: LTS (Long-Term Support)
 
 To verify installation, run in terminal:
 
-node -v
-npm -v
+    node -v
+    npm -v
 
 ### 2. 📁 Clone the Repository
 
@@ -30,17 +30,17 @@ cd practical-money-organiser  # or whatever folder name you chose when cloning
 
 Install all required packages using npm:
 
-npm install
+    npm install
 
-            react ^19.1.0
+                react ^19.1.0
 
-            react-dom ^19.1.0
+                react-dom ^19.1.0
 
-            react-router-dom ^7.6.1
+                react-router-dom ^7.6.1
 
-            firebase ^11.7.3
+                firebase ^11.7.3
 
-            tailwindcss ^4.1.8
+                tailwindcss ^4.1.8
 
 @tailwindcss/vite ^4.1.8
 
@@ -50,7 +50,7 @@ Plus various dev dependencies like vite, eslint, and @vitejs/plugin-react
 
 Run the development server:
 
-npm run dev
+    npm run dev
 
 This will open the app in your browser at http://localhost:5173.
 
@@ -64,13 +64,13 @@ No additional environment variables are required to run the app locally.
 
 🛠️ Useful Scripts
 
-npm run dev — Starts the development server
+    npm run dev — Starts the development server
 
-npm run build — Builds the app for production
+    npm run build — Builds the app for production
 
-npm run preview — Previews the built app
+    npm run preview — Previews the built app
 
-npm run lint — Lints the code (if ESLint is set up)
+    npm run lint — Lints the code (if ESLint is set up)
 
 ## 📚 Tech Stack
 
@@ -90,8 +90,8 @@ Make sure ports like 5173 are not blocked.
 
 If you encounter issues, try deleting node_modules and reinstall:
 
-rm -rf node_modules
-npm install
+    rm -rf node_modules
+    npm install
 
 ## 🙌 Contributors
 
