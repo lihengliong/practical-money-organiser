@@ -1,371 +1,276 @@
+/* activities.css */
+
 /* Container Styles */
 .activities-container {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  /* Header Styles */
-  .activities-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-  }
-  
-  .activities-header h1 {
-    margin: 0 0 10px 0;
-    color: #333;
-  }
-  
-  .activities-header p {
-    color: #666;
-    margin: 0;
-    font-size: 1rem;
-  }
-  
-  .back-button {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-  
-  .back-button:hover {
-    background: #5a6268;
-  }
-  
-  /* Error Styles */
-  .error-message {
-    background: #fee;
-    color: red;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    border: 1px solid #fcc;
-  }
-  
-  /* Add Expense Form */
-  .add-expense-form {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 25px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .add-expense-form h2 {
-    margin: 0 0 20px 0;
-    color: #333;
-  }
-  
-  .expense-form-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 2fr auto;
-    gap: 15px;
-    align-items: end;
-  }
-  
-  .form-input {
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-  }
-  
-  .form-input:focus {
-    outline: none;
-    border-color: #007bff;
-  }
-  
-  .add-expense-btn {
-    background: #28a745;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-  }
-  
-  .add-expense-btn:hover {
-    background: #218838;
-  }
-  
-  /* Welcome Screen */
-  .welcome-screen {
-    text-align: center;
-    padding: 60px 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border: 1px solid #e9ecef;
-  }
-  
-  .welcome-screen h2 {
-    color: #6c757d;
-    margin-bottom: 15px;
-  }
-  
-  .welcome-screen p {
-    color: #6c757d;
-    font-size: 1.1rem;
-  }
-  
-  /* Main Content Grid */
-  .main-content-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-  }
-  
-  /* Balances Section */
-  .balances-section h2 {
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .balances-container {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  
-  .balance-item {
-    padding: 20px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .balance-item:last-child {
-    border-bottom: none;
-  }
-  
-  .balance-item.positive {
-    background: #d4edda;
-  }
-  
-  .balance-item.negative {
-    background: #f8d7da;
-  }
-  
-  .balance-item.neutral {
-    background: #f8f9fa;
-  }
-  
-  .balance-name {
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-  
-  .balance-amount {
-    font-size: 1.3rem;
-    font-weight: bold;
-  }
-  
-  .balance-status {
-    font-size: 1rem;
-    font-weight: normal;
-    margin-left: 10px;
-  }
-  
-  /* Quick Settle Up */
-  .settle-up-section {
-    margin-top: 30px;
-  }
-  
-  .settle-up-section h3 {
-    margin-bottom: 15px;
-  }
-  
-  .all-settled {
-    padding: 20px;
-    background: #d4edda;
-    border-radius: 5px;
-    text-align: center;
-    border: 1px solid #c3e6cb;
-  }
-  
-  .settle-up-item {
-    margin: 10px 0;
-    padding: 15px;
-    background: #fff3cd;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .settle-up-btn {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .settle-up-btn:hover {
-    background: #0056b3;
-  }
-  
-  /* Expenses Section */
-  .expenses-section h2 {
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .expenses-list {
-    max-height: 500px;
-    overflow-y: auto;
-  }
-  
-  .expense-item {
-    margin: 0 0 15px 0;
-    padding: 20px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-  }
-  
-  .expense-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .expense-title {
-    font-weight: bold;
-    font-size: 1.1rem;
-    margin-bottom: 5px;
-  }
-  
-  .expense-payer {
-    color: #666;
-    font-size: 0.9rem;
-  }
-  
-  .expense-amount {
-    text-align: right;
-  }
-  
-  .expense-total {
-    font-size: 1.3rem;
-    font-weight: bold;
-    color: #333;
-  }
-  
-  .expense-split {
-    font-size: 0.8rem;
-    color: #666;
-  }
-  
-  /* Payment History */
-  .payment-history {
-    margin-top: 40px;
-  }
-  
-  .payment-history h2 {
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .payment-history-container {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-  }
-  
-  .payment-item {
-    margin: 10px 0;
-    padding: 15px;
-    background: #d4edda;
-    border: 1px solid #c3e6cb;
-    border-radius: 5px;
-  }
-  
-  .payment-date {
-    color: #666;
-    margin-left: 15px;
-    font-size: 0.9rem;
-  }
-  
-  /* Loading and Error States */
-  .loading-container, .error-container, .no-group-container {
-    text-align: center;
-    padding: 50px;
-  }
-  
-  .error-container h2 {
-    color: #dc3545;
-    margin-bottom: 15px;
-  }
-  
-  .error-container p {
-    color: #666;
-    margin-bottom: 20px;
-  }
-  
-  .primary-button {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    margin-right: 10px;
-  }
-  
-  .primary-button:hover {
-    background: #0056b3;
-  }
-  
-  .secondary-button {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .secondary-button:hover {
-    background: #5a6268;
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .main-content-grid {
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    
-    .expense-form-grid {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-    
-    .activities-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 15px;
-    }
-    
-    .settle-up-item {
-      flex-direction: column;
-      gap: 10px;
-      text-align: center;
-    }
-    
-    .expense-content {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-  }
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header Styles */
+.activities-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.activities-header h1 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+.activities-header p {
+  color: #666;
+  margin: 0;
+  font-size: 1rem;
+}
+.back-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.back-button:hover {
+  background: #5a6268;
+}
+
+/* Error Styles */
+.error-message {
+  background: #fee;
+  color: red;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  border: 1px solid #fcc;
+}
+
+/* Add Expense Form */
+.add-expense-form {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.add-expense-form h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+}
+
+/* Expense Form Grid */
+.expense-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 0.8fr 0.8fr auto; /* desc, amount, who paid, who’s involved, button */
+  gap: 15px;
+  align-items: end;
+}
+
+/* Form Inputs (text, number, select) */
+.form-input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+  width: 100%;
+}
+.form-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+/* React-Select override to match other inputs */
+.form-input .react-select__control {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  min-height: 38px;
+  font-size: 1rem;
+  box-shadow: none;
+}
+.form-input .react-select__control--is-focused {
+  border-color: #007bff;
+}
+
+/* Menu and options styling */
+.form-input .react-select__menu {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.form-input .react-select__option {
+  padding: 8px 12px;
+  font-size: 1rem;
+}
+.form-input .react-select__option--is-focused {
+  background: #f0f8ff;
+}
+.form-input .react-select__option--is-selected {
+  background: #007bff;
+  color: #fff;
+}
+
+/* Multi-value tags */
+.form-input .react-select__multi-value {
+  background: #e9ecef;
+}
+.form-input .react-select__multi-value__label {
+  color: #333;
+}
+.form-input .react-select__multi-value__remove {
+  color: #666;
+  cursor: pointer;
+}
+
+/* Add Expense Button */
+.add-expense-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  grid-column: 5;       /* place in fifth column */
+  justify-self: end;    /* align to right */
+}
+.add-expense-btn:hover {
+  background: #218838;
+}
+
+/* Welcome Screen */
+.welcome-screen {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+}
+.welcome-screen h2 {
+  color: #6c757d;
+  margin-bottom: 15px;
+}
+.welcome-screen p {
+  color: #6c757d;
+  font-size: 1.1rem;
+}
+
+/* Main Content Grid */
+.main-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+/* Balances Section */
+.balances-section h2 { margin-bottom: 20px; color: #333; }
+.balances-container {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.balance-item {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+.balance-item:last-child { border-bottom: none; }
+.balance-item.positive { background: #d4edda; }
+.balance-item.negative { background: #f8d7da; }
+.balance-item.neutral  { background: #f8f9fa; }
+.balance-name { font-weight: bold; margin-bottom: 5px; }
+.balance-amount { font-size: 1.3rem; font-weight: bold; }
+.balance-status { font-size: 1rem; margin-left: 10px; }
+
+/* Quick Settle Up */
+.settle-up-section { margin-top: 30px; }
+.settle-up-section h3 { margin-bottom: 15px; }
+.all-settled {
+  padding: 20px;
+  background: #d4edda;
+  border-radius: 5px;
+  text-align: center;
+  border: 1px solid #c3e6cb;
+}
+.settle-up-item {
+  margin: 10px 0;
+  padding: 15px;
+  background: #fff3cd;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.settle-up-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.settle-up-btn:hover { background: #0056b3; }
+
+/* Expenses Section */
+.expenses-section h2 { margin-bottom: 20px; color: #333; }
+.expenses-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+.expense-item {
+  margin: 0 0 15px 0;
+  padding: 20px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+.expense-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.expense-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+.expense-payer { color: #666; font-size: 0.9rem; }
+.expense-amount { text-align: right; }
+.expense-total  { font-size: 1.3rem; font-weight: bold; color: #333; }
+.expense-split  { font-size: 0.8rem; color: #666; }
+
+/* Payment History */
+.payment-history { margin-top: 40px; }
+.payment-history h2 { margin-bottom: 20px; color: #333; }
+.payment-history-container {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+}
+.payment-item {
+  margin: 10px 0;
+  padding: 15px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 5px;
+}
+.payment-date { color: #666; margin-left: 15px; font-size: 0.9rem; }
+
+/* Loading & No-Group States */
+.loading-container,
+.error-container,
+.no-group-container {
+  text-align: center;
+  padding: 50px;
+}
+.error-container h2 { color: #dc3545; margin-bottom: 15px; }
+.error-container p  { color: #666; margin-bottom: 20px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content-grid { grid-template-columns: 1fr; gap: 20px; }
+  .expense-form-grid { grid-template-columns: 1fr; gap: 10px; }
+  .activities-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+  .settle-up-item { flex-direction: column; gap: 10px; text-align: center; }
+  .expense-content { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
