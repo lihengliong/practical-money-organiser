@@ -152,11 +152,15 @@ const Activities = () => {
   
     let splits = [];
         if (splitType === 'equal') {
-          const each = amount / involved.length;
-          splits = involved.map(m => ({
+          const share   = Math.floor((amount / involved.length) * 100) / 100;
+          const total   = share * involved.length;
+          const leftover = parseFloat((amount - total).toFixed(2));
+
+          splits = involved.map((m, i) => ({
             member:     m,
-            amountOwed: parseFloat(each.toFixed(2))
+            amountOwed: parseFloat(((i === 0 ? share + leftover : share)).toFixed(2))
           }));
+
         } else if (splitType === 'percent') {
           splits = involved.map(m => {
             const pct = parseFloat(newExpense.percentSplits[m]) || 0;
@@ -516,9 +520,10 @@ const Activities = () => {
                       <div className="expense-payer">Paid by: {memberDisplay(expense.paidBy)}</div>
                     </div>
                     <div className="expense-amount">
-                      <div className="expense-total">${expense.amount}</div>
-                      <div className="expense-split">
-                        ${(expense.amount / group.members.length).toFixed(2)} each
+                      <div className="expense-total">
+                        {
+                          (expense.splits.find(s => s.member === user.email)?.amountOwed || 0).toFixed(2)
+                        }
                       </div>
                     </div>
                   </div>
