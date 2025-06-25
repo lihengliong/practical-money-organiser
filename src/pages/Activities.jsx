@@ -516,11 +516,15 @@ const Activities = () => {
                       <div className="expense-payer">Paid by: {memberDisplay(expense.paidBy)}</div>
                     </div>
                     <div className="expense-amount">
-                      <div className="expense-total">${expense.amount}</div>
-                      <div className="expense-split">
-                        ${(expense.amount / group.members.length).toFixed(2)} each
+                      <div className="expense-total">
+                        ${
+                          (
+                            expense.splits.find(s => s.member === user.email)
+                            ?.amountOwed || 0
+                          ).toFixed(2)
+                        }
+                        </div>
                       </div>
-                    </div>
                   </div>
                 </div>
               ))}
