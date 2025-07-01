@@ -19,7 +19,7 @@ export const Auth = () => {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         if (currentUser) {
           setUser(currentUser);
-          navigate('/groups');
+          navigate('/friends');
         } else {
           setUser(null);
         }
@@ -27,14 +27,14 @@ export const Auth = () => {
       return () => unsubscribe();
     }, [navigate]);
   
-    // Fixed: Sign in for existing users
+    // Sign in for existing users
     const signIn = async () => {
       try {
         setLoading(true);
         setError("");
         await signInWithEmailAndPassword(auth, email, password);// Sign in existing user
         // User already exists in Firestore, no need to create again
-        navigate("/groups");
+        navigate("/friends");
       } catch (err) {
         setError(err.message);
         console.error(err);
@@ -54,7 +54,7 @@ export const Auth = () => {
           await res.user.updateProfile({ displayName });
         }
         await createUserInFirestore(res.user, displayName); // Save to Firestore
-        navigate("/groups");
+        navigate("/friends");
       } catch (err) {
         setError(err.message);
         console.error(err);
@@ -69,7 +69,7 @@ export const Auth = () => {
         setError("");
         const res = await signInWithPopup(auth, googleProvider);
         await createUserInFirestore(res.user); // ✅ Create if doesn't exist
-        navigate("/groups");
+        navigate("/friends");
       } catch (err) {
         setError(err.message);
         console.error(err);

@@ -1,7 +1,7 @@
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../config/firebase";
 import { useNavigate } from "react-router-dom";
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import './stylesheets/header.css';
 
@@ -29,11 +29,11 @@ const Header = () => {
   return (
     <header className="navbar">
       <nav className="nav-links">
-        <Link to="/friends">Friends</Link>
-        <Link to="/groups">Groups</Link>
-        <Link to="/history">History</Link>
-        <Link to="/notifications">Notifications</Link>
-        <Link to="/analytics">Analytics</Link>
+        <NavLink to="/friends" className={({ isActive }) => isActive ? 'active' : ''}>Friends</NavLink>
+        <NavLink to="/groups" className={({ isActive }) => isActive ? 'active' : ''}>Groups</NavLink>
+        <NavLink to="/ledger" className={({ isActive }) => isActive ? 'active' : ''}>Ledger</NavLink>
+        <NavLink to="/notifications" className={({ isActive }) => isActive ? 'active' : ''}>Notifications</NavLink>
+        <NavLink to="/analytics" className={({ isActive }) => isActive ? 'active' : ''}>Analytics</NavLink>
         {user && (
           <div className="user-section">
             <span className="user-email">{user.email}</span>
