@@ -16,6 +16,7 @@ function Groups() {
     const [error, setError] = useState('');
     const [addingEmail, setAddingEmail] = useState(false);
     const navigate = useNavigate();
+    const [groupBalances, setGroupBalances] = useState({});
 
     useEffect(() => {
       if (user) {
@@ -134,6 +135,46 @@ function Groups() {
       }
     };
 
+    // Fetch group balances for the user
+    useEffect(() => {
+      const fetchAllGroupBalances = async () => {
+        if (!user || !groups.length) return;
+        const balances = {};
+        for (const group of groups) {
+          // Fetch expenses
+          const expensesSnapshot = await getDocs(query(collection(db, 'expenses'), where('groupId', '==', group.id)));
+          const expenses = expensesSnapshot.docs.map(doc => doc.data());
+          // Fetch payments
+          const paymentsSnapshot = await getDocs(query(collection(db, 'payments'), where('groupId', '==', group.id)));
+          const payments = paymentsSnapshot.docs.map(doc => doc.data());
+          // Calculate balance
+          let balance = 0;
+          expenses.forEach(expense => {
+            if (expense.paidBy === user.email) {
+              expense.splits.forEach(split => {
+                if (split.member !== user.email) {
+                  balance += split.amountOwed;
+                }
+              });
+            } else if (expense.splits.some(s => s.member === user.email)) {
+              const userSplit = expense.splits.find(s => s.member === user.email);
+              balance -= userSplit.amountOwed;
+            }
+          });
+          payments.forEach(payment => {
+            if (payment.fromUser === user.email) {
+              balance += payment.amount;
+            } else if (payment.toUser === user.email) {
+              balance -= payment.amount;
+            }
+          });
+          balances[group.id] = balance;
+        }
+        setGroupBalances(balances);
+      };
+      fetchAllGroupBalances();
+    }, [user, groups]);
+
     const toggleFriendSelection = (friendEmail) => {
       setSelectedMembers(prev => {
         if (prev.includes(friendEmail)) {
@@ -220,6 +261,18 @@ function Groups() {
           createdBy: user.email,
           createdAt: new Date(),
         });
+
+        // Push notifications to all added members except the creator
+        await Promise.all(selectedMembers.map(memberEmail =>
+          addDoc(collection(db, 'notifications'), {
+            type: 'group_add',
+            user: memberEmail,
+            groupName: groupName,
+            createdBy: user.email,
+            createdAt: new Date(),
+            message: `You were added to the group '${groupName}' by ${user.email}`
+          })
+        ));
 
         setGroupName('');
         setSelectedMembers([]);
@@ -353,13 +406,22 @@ function Groups() {
                   </span>
                 ))}
               </div>
-              <small className="members-help-text">
-                🟢 Green = Friends, ⚫ Gray = Others, Click to remove
-              </small>
+              <div className="members-legend">
+                <span className="legend-dot friend-dot"></span> Friend
+                <span className="legend-dot other-dot"></span> Other
+                <span className="legend-dot current-user-dot"></span> You
+                <span className="members-help-text" style={{ marginLeft: 10 }}>
+                  Click a member to remove
+                </span>
+              </div>
             </div>
           )}
           
-          <button onClick={createGroup} className="create-group-btn">
+          <button 
+            onClick={createGroup}
+            className={`create-group-btn${groupName && selectedMembers.length > 0 ? ' ready' : ''}`}
+            disabled={loading}
+          >
             Create Group
           </button>
         </div>
@@ -391,6 +453,18 @@ function Groups() {
                       ? (group.memberProfiles.length > 3 && ` +${group.memberProfiles.length - 3} more`)
                       : (group.members.length > 3 && ` +${group.members.length - 3} more`)}
                   </p>
+                  {/* Balance summary line */}
+                  <div className="group-balance-summary">
+                    {groupBalances[group.id] === undefined ? (
+                      <span style={{ color: '#888' }}>Loading balance...</span>
+                    ) : groupBalances[group.id] > 0 ? (
+                      <span style={{ color: 'green', fontWeight: 600 }}>You are owed ${groupBalances[group.id].toFixed(2)}</span>
+                    ) : groupBalances[group.id] < 0 ? (
+                      <span style={{ color: 'red', fontWeight: 600 }}>You owe ${Math.abs(groupBalances[group.id]).toFixed(2)}</span>
+                    ) : (
+                      <span style={{ color: '#007bff', fontWeight: 600 }}>All settled up!</span>
+                    )}
+                  </div>
                   <small className="group-creator">
                     Created by: {group.createdBy}
                   </small>

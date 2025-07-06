@@ -3,7 +3,7 @@ import { Auth } from './components/auth'
 import Friends from './pages/Friends'
 import Groups from './pages/Groups'
 import Activities from './pages/Activities'
-import History from './pages/History'
+import Ledger from './pages/Ledger'
 import Notifications  from './pages/Notifications'
 import Analytics from './pages/Analytics'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
@@ -19,7 +19,7 @@ function App() {
           <Route path="/friends" element={<Friends />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/activities/:groupId" element={<Activities />} />
-          <Route path="/history" element={<History />} />
+          <Route path="/ledger" element={<Ledger />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/analytics" element={<Analytics />} />
         </Route>

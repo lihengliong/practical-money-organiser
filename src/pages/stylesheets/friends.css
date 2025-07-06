@@ -1,5 +1,8 @@
 .friends-container {
-    padding: 20px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 32px 24px;
   }
   
   .friends-title {
@@ -230,6 +233,9 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     transition: box-shadow 0.2s;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .friend-item:hover {
@@ -290,6 +296,19 @@
   }
   
   /* Responsive Design */
+  @media (max-width: 1024px) {
+    .friends-container {
+      max-width: 98vw;
+      padding: 16px 8px;
+    }
+  }
+  @media (max-width: 600px) {
+    .friends-container {
+      max-width: 100vw;
+      padding: 6px 2px;
+    }
+  }
+  
   @media (max-width: 768px) {
     .friends-container {
       padding: 10px;

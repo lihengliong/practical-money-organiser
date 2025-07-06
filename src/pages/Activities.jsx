@@ -185,6 +185,21 @@ const Activities = () => {
         splits
       });
 
+      // Push notifications to all involved except the creator
+      await Promise.all(
+        involved.filter(email => email !== user.email).map(email =>
+          addDoc(collection(db, 'notifications'), {
+            type: 'expense_add',
+            user: email,
+            groupName: group.name,
+            expenseDescription: newExpense.description,
+            addedBy: user.email,
+            createdAt: new Date(),
+            message: `You were added to an expense ('${newExpense.description}') in group '${group.name}' by ${user.email}`
+          })
+        )
+      );
+
       setNewExpense({ description: '', amount: '', paidBy: '', participants: [], exactSplits: {}, percentSplits: {} });
       setSplitType('equal');
       setError('');
@@ -208,6 +223,22 @@ const Activities = () => {
         paymentDate: new Date(),
         status: 'completed'
       });
+
+      // Push notifications for both payer and payee
+      const notificationData = {
+        type: 'payment',
+        fromUser,
+        toUser,
+        amount,
+        groupId: group.id,
+        groupName: group.name,
+        createdAt: new Date(),
+        message: `${fromUser} paid ${toUser} $${amount} in group '${group.name}'`
+      };
+      await Promise.all([
+        addDoc(collection(db, 'notifications'), { ...notificationData, user: fromUser }),
+        addDoc(collection(db, 'notifications'), { ...notificationData, user: toUser })
+      ]);
 
       console.log('Payment recorded, refreshing data...');
       
@@ -344,7 +375,6 @@ const Activities = () => {
           )}
         </div>
 
-
         <div className="expense-form-grid">
           <input
             type="text"
@@ -374,16 +404,16 @@ const Activities = () => {
           
           <Select
             isMulti                                           
-            options={participantOptions}                      
+            options={participantOptions}                     
             value={participantOptions.filter(opt => newExpense.participants.includes(opt.value))}
-            onChange={selected => {                          
+            onChange={selected => {                         
               let values = selected ? selected.map(o => o.value) : [];
               if (values.includes('ALL')) values = ['ALL'];
               setNewExpense({ ...newExpense, participants: values });
             }}
             closeMenuOnSelect={false}
-            hideSelectedOptions={false}                       
-            isOptionDisabled={opt =>                         
+            hideSelectedOptions={false}                      
+            isOptionDisabled={opt =>                        
               opt.value === 'ALL'
                 ? newExpense.participants.length > 0 && !newExpense.participants.includes('ALL')
                 : newExpense.participants.includes('ALL')
@@ -392,51 +422,114 @@ const Activities = () => {
             className="form-input"
             classNamePrefix="react-select"
           />
-          
-          
-          {splitType === 'percent' && involved.map(m => {
-            const pct = parseFloat(newExpense.percentSplits[m]) || 0;
-            const owed = ((pct / 100) * parseFloat(newExpense.amount) || 0).toFixed(2);
-            return (
-              <div key={m} className="split-row">
-                <span>{memberDisplay(m)}</span>
-                <input
-                  type="number" step="1" min="0" max="100"
-                  value={newExpense.percentSplits[m] || ''}
-                  onChange={e => setNewExpense({
-                    ...newExpense,
-                    percentSplits: { ...newExpense.percentSplits, [m]: e.target.value }
-                  })}
-                />%
-                <span>${owed}</span>
-              </div>
-            );
-          })}
-
-          {splitType === 'exact' && involved.map(m => {
-            const exact = parseFloat(newExpense.exactSplits[m]) || 0;
-            const pct   = ((exact / parseFloat(newExpense.amount)) * 100 || 0).toFixed(1);
-            return (
-              <div key={m} className="split-row">
-                <span>{memberDisplay(m)}</span>
-                <input
-                  type="number" step="0.01"
-                  value={newExpense.exactSplits[m] || ''}
-                  onChange={e => setNewExpense({
-                    ...newExpense,
-                    exactSplits: { ...newExpense.exactSplits, [m]: e.target.value }
-                  })}
-                />
-                <span>({pct}% )</span>
-              </div>
-            );
-          })}
-
-
-          <button onClick={addExpense} className="add-expense-btn">
-            Add Expense
-          </button>
         </div>
+
+        {/* Improved Split Table UI */}
+        {(splitType === 'percent' || splitType === 'exact' || splitType === 'equal') && involved.length > 0 && (
+          <div className="split-table-container">
+            <table className="split-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  {splitType === 'percent' && <th>Percent</th>}
+                  {splitType === 'exact' && <th>Amount</th>}
+                  {splitType === 'equal' && <th>Share</th>}
+                  <th>Calculated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {involved.map(m => {
+                  const pct = parseFloat(newExpense.percentSplits[m]) || 0;
+                  const exact = parseFloat(newExpense.exactSplits[m]) || 0;
+                  const amount = parseFloat(newExpense.amount) || 0;
+                  let calculated = 0;
+                  let error = false;
+                  if (splitType === 'percent') {
+                    calculated = ((pct / 100) * amount) || 0;
+                    error = pct < 0 || pct > 100;
+                  } else if (splitType === 'exact') {
+                    calculated = exact;
+                    error = exact < 0 || exact > amount;
+                  } else if (splitType === 'equal') {
+                    calculated = amount / involved.length || 0;
+                  }
+                  return (
+                    <tr key={m} className={error ? 'split-error-row' : ''}>
+                      <td>{memberDisplay(m)}</td>
+                      {splitType === 'percent' && (
+                        <td>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={newExpense.percentSplits[m] || ''}
+                            onChange={e => setNewExpense({
+                              ...newExpense,
+                              percentSplits: { ...newExpense.percentSplits, [m]: e.target.value }
+                            })}
+                            className="split-slider"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={newExpense.percentSplits[m] || ''}
+                            onChange={e => setNewExpense({
+                              ...newExpense,
+                              percentSplits: { ...newExpense.percentSplits, [m]: e.target.value }
+                            })}
+                            className="split-input"
+                          />%
+                        </td>
+                      )}
+                      {splitType === 'exact' && (
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={newExpense.exactSplits[m] || ''}
+                            onChange={e => setNewExpense({
+                              ...newExpense,
+                              exactSplits: { ...newExpense.exactSplits, [m]: e.target.value }
+                            })}
+                            className="split-input"
+                          />
+                        </td>
+                      )}
+                      {splitType === 'equal' && (
+                        <td>
+                          {amount > 0 ? `$${(amount / involved.length).toFixed(2)}` : '-'}
+                        </td>
+                      )}
+                      <td>${calculated.toFixed(2)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              {/* Summary Row */}
+              <tfoot>
+                <tr className="split-summary-row">
+                  <td><strong>Total</strong></td>
+                  {splitType === 'percent' && <td>{involved.reduce((sum, m) => sum + (parseFloat(newExpense.percentSplits[m]) || 0), 0)}%</td>}
+                  {splitType === 'exact' && <td>${involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0).toFixed(2)}</td>}
+                  {splitType === 'equal' && <td>-</td>}
+                  <td>
+                    {splitType === 'percent' && `$${involved.reduce((sum, m) => sum + ((parseFloat(newExpense.percentSplits[m]) || 0) / 100 * (parseFloat(newExpense.amount) || 0)), 0).toFixed(2)}`}
+                    {splitType === 'exact' && `$${involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0).toFixed(2)}`}
+                    {splitType === 'equal' && `$${(parseFloat(newExpense.amount) || 0).toFixed(2)}`}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+
+        <button onClick={addExpense} className="add-expense-btn">
+          Add Expense
+        </button>
       </div>
 
       {!hasExpenses ? (
