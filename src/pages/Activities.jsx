@@ -6,6 +6,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import Select from 'react-select';
 import './stylesheets/activities.css';
 import { fetchExchangeRates } from '../utils/currency';
+import CurrencySelector from '../components/CurrencySelector';
 
 const SPLIT_TYPES = [ 
   { key: 'equal',   label: 'Equal Splits' },
@@ -235,20 +236,35 @@ const Activities = () => {
         category:     newExpense.category || 'Other',
       });
 
-      // Push notifications to all involved except the creator
+      // Notify each user who owes money (not the payer)
       await Promise.all(
-        involved.filter(email => email !== user.email).map(email =>
+        splits.filter(split => split.member !== user.email).map(split =>
           addDoc(collection(db, 'notifications'), {
-            type: 'expense_add',
-            user: email,
+            type: 'expense_request',
+            user: split.member,
             groupName: group.name,
             expenseDescription: newExpense.description,
             addedBy: user.email,
             createdAt: new Date(),
-            message: `You were added to an expense ('${newExpense.description}') in group '${group.name}' by ${user.email}`
+            message: `You owe $${split.amountOwed.toFixed(2)} for '${newExpense.description}' in group '${group.name}'.`
           })
         )
       );
+
+      // Push notifications to all involved except the creator (legacy, can be removed if not needed)
+      // await Promise.all(
+      //   involved.filter(email => email !== user.email).map(email =>
+      //     addDoc(collection(db, 'notifications'), {
+      //       type: 'expense_add',
+      //       user: email,
+      //       groupName: group.name,
+      //       expenseDescription: newExpense.description,
+      //       addedBy: user.email,
+      //       createdAt: new Date(),
+      //       message: `You were added to an expense ('${newExpense.description}') in group '${group.name}' by ${user.email}`
+      //     })
+      //   )
+      // );
 
       setNewExpense({ description: '', amount: '', paidBy: '', participants: [], exactSplits: {}, percentSplits: {} });
       setSplitType('equal');
@@ -305,31 +321,47 @@ const Activities = () => {
 
   const calculateBalances = () => {
     const balances = {};
-    
     group.members.forEach(member => {
       balances[member] = 0;
     });
-
-    console.log('💰 Calculating balances...');
-    console.log('Expenses:', expenses.length);
-    console.log('Payments:', payments.length);
-
+    // Calculate balances in base currency
     expenses.forEach(expense => {
-      balances[expense.paidBy] += expense.amount;
-      expense.splits.forEach(split => {
-        balances[split.member] -= split.amountOwed;
-      });
+      const expenseCurrency = (expense.currency || baseCurrency).toUpperCase();
+      const base = baseCurrency.toUpperCase();
+      const rateBase = exchangeRates[base];
+      const rateExpense = exchangeRates[expenseCurrency];
+      // Conversion factor: amount in expense currency * (rateBase / rateExpense)
+      const convert = (amount) => {
+        if (
+          expenseCurrency !== base &&
+          typeof rateBase === 'number' &&
+          typeof rateExpense === 'number' &&
+          rateExpense !== 0
+        ) {
+          return amount * (rateBase / rateExpense);
+        }
+        return amount;
+      };
+      if (expense.paidBy && Object.prototype.hasOwnProperty.call(balances, expense.paidBy)) {
+        balances[expense.paidBy] += convert(expense.amount);
+      }
+      if (expense.splits) {
+        expense.splits.forEach(split => {
+          if (Object.prototype.hasOwnProperty.call(balances, split.member)) {
+            balances[split.member] -= convert(split.amountOwed);
+          }
+        });
+      }
     });
-
-    console.log('Balances after expenses:', balances);
-
     payments.forEach(payment => {
-      console.log('Applying payment:', payment);
-      balances[payment.fromUser] += payment.amount;
-      balances[payment.toUser] -= payment.amount;
+      // Assume payments are always in base currency for now
+      if (Object.prototype.hasOwnProperty.call(balances, payment.fromUser)) {
+        balances[payment.fromUser] += payment.amount;
+      }
+      if (Object.prototype.hasOwnProperty.call(balances, payment.toUser)) {
+        balances[payment.toUser] -= payment.amount;
+      }
     });
-
-    console.log('Final balances:', balances);
     return balances;
   };
 
@@ -416,19 +448,7 @@ const Activities = () => {
         </button>
       )}
       {/* Base currency selector */}
-      <div className="base-currency-section" style={{ marginBottom: 20 }}>
-        <label htmlFor="base-currency-select"><strong>Base Currency:</strong> </label>
-        <select
-          id="base-currency-select"
-          value={baseCurrency}
-          onChange={e => setBaseCurrency(e.target.value)}
-          style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, border: '1px solid #ccc' }}
-        >
-          {currencyOptions.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-      </div>
+      <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} />
       {/* Header */}
       <div className="activities-header">
         <div>

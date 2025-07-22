@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { db, auth } from '../config/firebase';
-import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import './stylesheets/groups.css';
 import { fetchExchangeRates } from '../utils/currency';
+import CurrencySelector from '../components/CurrencySelector';
 
 function Groups() {
     const [groupName, setGroupName] = useState('');
@@ -343,17 +344,7 @@ function Groups() {
       navigate(`/activities/${group.id}`, { state: { group } });
     };
 
-    // Add delete group handler
-    const deleteGroup = async (groupId, groupName) => {
-      if (!window.confirm(`Are you sure you want to delete the group '${groupName}'? This cannot be undone.`)) return;
-      try {
-        await deleteDoc(doc(db, 'groups', groupId));
-        fetchGroups();
-      } catch (err) {
-        setError('Failed to delete group');
-        console.error('Delete group error:', err);
-      }
-    };
+    // (deleteGroup handler removed as it was unused)
 
     if (!user) {
       return (
@@ -381,31 +372,8 @@ function Groups() {
           <div style={{ color: '#888', marginBottom: 16 }}>Loading exchange rates...</div>
         )}
         {/* Base currency selector */}
-        <div className="base-currency-section" style={{ marginBottom: 20 }}>
-          <label htmlFor="base-currency-select"><strong>Base Currency:</strong> </label>
-          <select
-            id="base-currency-select"
-            value={baseCurrency}
-            onChange={e => setBaseCurrency(e.target.value)}
-            disabled={fetchingRates}
-            style={{ marginLeft: 8, padding: '2px 8px' }}
-          >
-            {/* Add more currencies as needed */}
-            <option value="SGD">SGD (Singapore Dollar)</option>
-            <option value="USD">USD (US Dollar)</option>
-            <option value="EUR">EUR (Euro)</option>
-            <option value="MYR">MYR (Malaysian Ringgit)</option>
-            <option value="IDR">IDR (Indonesian Rupiah)</option>
-            <option value="THB">THB (Thai Baht)</option>
-            <option value="VND">VND (Vietnamese Dong)</option>
-            <option value="PHP">PHP (Philippine Peso)</option>
-            <option value="INR">INR (Indian Rupee)</option>
-            <option value="CNY">CNY (Chinese Yuan)</option>
-            <option value="JPY">JPY (Japanese Yen)</option>
-            {/* ... */}
-          </select>
-          {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
-        </div>
+        <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} style={{ marginBottom: 20 }} />
+        {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
         <h2>Create a Group</h2>
         
         {error && <div className="error-message">{error}</div>}
