@@ -227,7 +227,24 @@ export default function Analytics() {
         memberAgg[e.paidBy] = (memberAgg[e.paidBy] || 0) + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0);
       });
       setBarData(Object.entries(memberAgg).map(([name, total]) => ({ name, total })));
-      setSummary({ totalThisMonth, myContributions, net });
+      const thisMonth = now.getMonth();
+      const thisYear = now.getFullYear();
+      // My total expenses this month (my share of all splits)
+      const myTotalThisMonth = allExpensesArr
+        .filter(e => {
+          const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
+          return d.getMonth() === thisMonth && d.getFullYear() === thisYear && e.splits && e.splits.some(s => s.member === user.email);
+        })
+        .reduce((sum, e) => {
+          const split = e.splits.find(s => s.member === user.email);
+          return sum + (split ? convert(split.amountOwed, e.currency) : 0);
+        }, 0);
+      setSummary({
+        totalThisMonth, // keep for reference if needed
+        myContributions,
+        net,
+        myTotalThisMonth
+      });
       setMostFrequentPayer(mostFrequentPayerCalc);
       setAllExpenses(allExpensesArr);
       setLoading(false);
@@ -248,10 +265,10 @@ export default function Analytics() {
         {/* Centralized Summary Cards Section */}
         <div className="analytics-summary-wrapper">
           <div className="analytics-summary-grid">
-            {/* Total Group Expenses Card */}
+            {/* My Total Expenses This Month Card */}
             <div className="analytics-card analytics-card-blue">
-              <div className="analytics-card-title">Total Group Expenses (This Month: {monthName})</div>
-              <div className="analytics-card-value analytics-card-value-blue">${summary.totalThisMonth.toFixed(2)}</div>
+              <div className="analytics-card-title">Total Expenses Incurred by Me (This Month: {monthName})</div>
+              <div className="analytics-card-value analytics-card-value-blue">${summary.myTotalThisMonth ? summary.myTotalThisMonth.toFixed(2) : '0.00'}</div>
             </div>
             {/* My Contributions Card */}
             <div className="analytics-card analytics-card-green">
