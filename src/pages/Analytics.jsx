@@ -8,6 +8,8 @@ import { db, auth } from '../config/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import './stylesheets/analytics.css';
+import CurrencySelector from '../components/CurrencySelector';
+import { fetchExchangeRates } from '../utils/currency';
 
 const pieColors = ["#3b82f6", "#10b981", "#f59e42", "#a78bfa", "#f43f5e", "#6366f1", "#fbbf24", "#ef4444"];
 
@@ -104,11 +106,24 @@ export default function Analytics() {
   const [lineData, setLineData] = useState([]);
   const [allExpenses, setAllExpenses] = useState([]);
   const [barData, setBarData] = useState([]);
-  const [baseCurrency] = useState('SGD'); // Replace with actual state/prop if you want to make it dynamic
+  const [baseCurrency, setBaseCurrency] = useState('SGD');
+  const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
   // Get current month name for display
   const now = new Date();
   const monthName = now.toLocaleString('default', { month: 'long' });
   const [pieMode, setPieMode] = useState('month'); // 'month' or 'all'
+
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const rates = await fetchExchangeRates(baseCurrency);
+        setExchangeRates(rates);
+      } catch {
+        setExchangeRates({ [baseCurrency]: 1 });
+      }
+    };
+    fetchRates();
+  }, [baseCurrency]);
 
   useEffect(() => {
     if (!user) return;
@@ -130,33 +145,45 @@ export default function Analytics() {
         const expensesSnapshot = await getDocs(query(collection(db, 'expenses'), where('groupId', '==', group.id)));
         allExpensesArr = allExpensesArr.concat(expensesSnapshot.docs.map(doc => ({ ...doc.data(), group })));
       }
-      setAllExpenses(allExpensesArr);
-      // 3. Calculate summary and chart data
-      const thisMonth = now.getMonth();
-      const thisYear = now.getFullYear();
       // --- Summary Cards ---
+      // Convert all amounts to base currency
+      const base = baseCurrency.toUpperCase();
+      const rateBase = exchangeRates[base];
+      const convert = (amount, currency) => {
+        const curr = (currency || base).toUpperCase();
+        const rateExpense = exchangeRates[curr];
+        if (
+          curr !== base &&
+          typeof rateBase === 'number' &&
+          typeof rateExpense === 'number' &&
+          rateExpense !== 0
+        ) {
+          return amount * (rateBase / rateExpense);
+        }
+        return amount;
+      };
       // Total group expenses this month
       const totalThisMonth = allExpensesArr
         .filter(e => {
           const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
-          return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         })
-        .reduce((sum, e) => sum + (typeof e.amount === 'number' ? e.amount : 0), 0);
+        .reduce((sum, e) => sum + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0), 0);
       // My personal contributions
       const myContributions = allExpensesArr
         .filter(e => e.paidBy === user.email)
-        .reduce((sum, e) => sum + (typeof e.amount === 'number' ? e.amount : 0), 0);
+        .reduce((sum, e) => sum + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0), 0);
       // Net balance (owes/owed)
       let net = 0;
       allExpensesArr.forEach(e => {
         if (!e.splits) return;
         if (e.paidBy === user.email) {
           e.splits.forEach(split => {
-            if (split.member !== user.email) net += split.amountOwed;
+            if (split.member !== user.email) net += convert(split.amountOwed, e.currency);
           });
         } else if (e.splits.some(s => s.member === user.email)) {
           const userSplit = e.splits.find(s => s.member === user.email);
-          net -= userSplit.amountOwed;
+          net -= convert(userSplit.amountOwed, e.currency);
         }
       });
       // Most frequent payer
@@ -165,11 +192,11 @@ export default function Analytics() {
         if (!e.paidBy) return;
         payerCounts[e.paidBy] = (payerCounts[e.paidBy] || 0) + 1;
       });
-      let mostFrequentPayer = '-';
+      let mostFrequentPayerCalc = '-';
       let maxCount = 0;
       Object.entries(payerCounts).forEach(([payer, count]) => {
         if (count > maxCount) {
-          mostFrequentPayer = payer;
+          mostFrequentPayerCalc = payer;
           maxCount = count;
         }
       });
@@ -187,20 +214,29 @@ export default function Analytics() {
         const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
         const key = `${d.getFullYear()}-${d.getMonth()}`;
         if (monthMap[key]) {
-          lineAgg[monthMap[key]] = (lineAgg[monthMap[key]] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
+          lineAgg[monthMap[key]] = (lineAgg[monthMap[key]] || 0) + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0);
         }
       });
       setLineData(months.map(m => ({ month: m, total: lineAgg[m] || 0 })));
+      // --- Pie Chart: Expense breakdown by category (toggle month/all) ---
+      // Pie data is handled in the pie chart section using context, pass baseCurrency and exchangeRates
       // --- Bar Chart: Member contributions ---
       const memberAgg = {};
       allExpensesArr.forEach(e => {
         if (!e.paidBy) return;
-        memberAgg[e.paidBy] = (memberAgg[e.paidBy] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
+        memberAgg[e.paidBy] = (memberAgg[e.paidBy] || 0) + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0);
       });
       setBarData(Object.entries(memberAgg).map(([name, total]) => ({ name, total })));
+      setSummary({ totalThisMonth, myContributions, net });
+      setMostFrequentPayer(mostFrequentPayerCalc);
+      setAllExpenses(allExpensesArr);
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, baseCurrency, exchangeRates]);
+
+  // State for summary values
+  const [summary, setSummary] = useState({ totalThisMonth: 0, myContributions: 0, net: 0 });
+  const [mostFrequentPayer, setMostFrequentPayer] = useState('-');
 
   if (!user) return <div className="p-8">Please log in to view analytics.</div>;
   if (loading) return <div className="p-8">Loading analytics...</div>;
@@ -208,31 +244,34 @@ export default function Analytics() {
   return (
     <PieModeContext.Provider value={{ pieMode, setPieMode }}>
       <div className="analytics-container">
-      {/* Centralized Summary Cards Section */}
-      <div className="analytics-summary-wrapper">
-        <div className="analytics-summary-grid">
-          {/* Total Group Expenses Card */}
-          <div className="analytics-card analytics-card-blue">
-            <div className="analytics-card-title">Total Group Expenses (This Month: {monthName})</div>
-            <div className="analytics-card-value analytics-card-value-blue">$514.00</div>
-          </div>
-          {/* My Contributions Card */}
-          <div className="analytics-card analytics-card-green">
-            <div className="analytics-card-title">My Contributions</div>
-            <div className="analytics-card-value analytics-card-value-green">$445.00</div>
-          </div>
-          {/* Net Balance Card */}
-          <div className="analytics-card analytics-card-purple">
-            <div className="analytics-card-title">Net Balance</div>
-            <div className="analytics-card-value analytics-card-value-purple">+$240.25</div>
-          </div>
-          {/* Most Frequent Payer Card */}
-          <div className="analytics-card analytics-card-yellow">
-            <div className="analytics-card-title">Most Frequent Payer</div>
-            <div className="analytics-card-value analytics-card-value-yellow">apple@gmail.com</div>
+        <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} style={{ marginBottom: 24 }} />
+        {/* Centralized Summary Cards Section */}
+        <div className="analytics-summary-wrapper">
+          <div className="analytics-summary-grid">
+            {/* Total Group Expenses Card */}
+            <div className="analytics-card analytics-card-blue">
+              <div className="analytics-card-title">Total Group Expenses (This Month: {monthName})</div>
+              <div className="analytics-card-value analytics-card-value-blue">${summary.totalThisMonth.toFixed(2)}</div>
+            </div>
+            {/* My Contributions Card */}
+            <div className="analytics-card analytics-card-green">
+              <div className="analytics-card-title">My Contributions</div>
+              <div className="analytics-card-value analytics-card-value-green">${summary.myContributions.toFixed(2)}</div>
+            </div>
+            {/* Net Balance Card */}
+            <div className="analytics-card analytics-card-purple">
+              <div className="analytics-card-title">Net Balance</div>
+              <div className="analytics-card-value analytics-card-value-purple">
+                {summary.net > 0 ? '+' : ''}{summary.net.toFixed(2)}
+              </div>
+            </div>
+            {/* Most Frequent Payer Card */}
+            <div className="analytics-card analytics-card-yellow">
+              <div className="analytics-card-title">Most Frequent Payer</div>
+              <div className="analytics-card-value analytics-card-value-yellow">{mostFrequentPayer}</div>
+            </div>
           </div>
         </div>
-      </div>
       {/* Charts Section */}
       <div className="analytics-charts-grid">
         <div className="analytics-chart-card">
@@ -258,12 +297,40 @@ export default function Analytics() {
 function ExpenseBreakdownByCategory({ allExpenses }) {
   const { pieMode, setPieMode } = usePieMode();
   const [pieData, setPieData] = useState([]);
+  const [baseCurrency] = useState('SGD'); // Use parent's baseCurrency if you want to sync
+  const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const rates = await fetchExchangeRates(baseCurrency);
+        setExchangeRates(rates);
+      } catch {
+        setExchangeRates({ [baseCurrency]: 1 });
+      }
+    };
+    fetchRates();
+  }, [baseCurrency]);
   useEffect(() => {
     // Filter and aggregate pie data based on pieMode
     const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
     let catAgg = {};
+    const base = baseCurrency.toUpperCase();
+    const rateBase = exchangeRates[base];
+    const convert = (amount, currency) => {
+      const curr = (currency || base).toUpperCase();
+      const rateExpense = exchangeRates[curr];
+      if (
+        curr !== base &&
+        typeof rateBase === 'number' &&
+        typeof rateExpense === 'number' &&
+        rateExpense !== 0
+      ) {
+        return amount * (rateBase / rateExpense);
+      }
+      return amount;
+    };
     if (pieMode === 'month') {
       allExpenses
         .filter(e => {
@@ -275,7 +342,7 @@ function ExpenseBreakdownByCategory({ allExpenses }) {
           if (typeof cat === 'string') {
             cat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
           }
-          catAgg[cat] = (catAgg[cat] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
+          catAgg[cat] = (catAgg[cat] || 0) + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0);
         });
     } else {
       allExpenses.forEach(e => {
@@ -283,11 +350,11 @@ function ExpenseBreakdownByCategory({ allExpenses }) {
         if (typeof cat === 'string') {
           cat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
         }
-        catAgg[cat] = (catAgg[cat] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
+        catAgg[cat] = (catAgg[cat] || 0) + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0);
       });
     }
     setPieData(Object.entries(catAgg).map(([name, value]) => ({ name, value })));
-  }, [allExpenses, pieMode]);
+  }, [allExpenses, pieMode, baseCurrency, exchangeRates]);
   return (
     <div className="analytics-chart-card">
       <div className="analytics-chart-title">Expense Breakdown by Category</div>
