@@ -364,9 +364,6 @@ const Friends = () => {
 					))
 				)}
 			</div>
-			<p className="balance-note">
-				Friend balance sheet to be added (across different groups)
-			</p>
 		</div>
 	);
 };
