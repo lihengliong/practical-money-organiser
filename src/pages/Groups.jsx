@@ -373,7 +373,7 @@ function Groups() {
         )}
         {/* Base currency selector */}
         <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} style={{ marginBottom: 20 }} />
-        {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
+          {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
         <h2>Create a Group</h2>
         
         {error && <div className="error-message">{error}</div>}

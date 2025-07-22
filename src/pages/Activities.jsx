@@ -437,20 +437,10 @@ const Activities = () => {
 
   return (
     <div className="activities-container">
-      {/* Delete group button, visible to all users */}
-      {user && (
-        <button
-          className="delete-group-btn"
-          style={{ marginBottom: 16, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '8px 20px', cursor: 'pointer', fontWeight: 600 }}
-          onClick={deleteGroup}
-        >
-          Delete Group
-        </button>
-      )}
       {/* Base currency selector */}
       <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} />
       {/* Header */}
-      <div className="activities-header">
+      <div className="activities-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1>{group.name}</h1>
           <p>{group.memberProfiles?.length || group.members.length} members: {
@@ -458,8 +448,17 @@ const Activities = () => {
               ? group.memberProfiles.map(m => m.displayName).join(', ')
               : group.members.join(', ')
           }</p>
+          {user && (
+            <button
+              className="delete-group-btn"
+              style={{ marginTop: 10, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '8px 20px', cursor: 'pointer', fontWeight: 600 }}
+              onClick={deleteGroup}
+            >
+              Delete Group
+            </button>
+          )}
         </div>
-        <button onClick={() => navigate('/groups')} className="back-button">
+        <button onClick={() => navigate('/groups')} className="back-button" style={{ alignSelf: 'flex-start', marginTop: 0 }}>
           ← Back to Groups
         </button>
       </div>
@@ -751,33 +750,37 @@ const Activities = () => {
                 }
                 return (
                   <div key={expense.id} className="expense-item">
-                    <div className="expense-content">
-                      <div>
-                        <div className="expense-title">{expense.description}</div>
-                        <div className="expense-payer">Paid by: {memberDisplay(expense.paidBy)}</div>
-                      </div>
-                      <div className="expense-amount">
-                        <div className="expense-total">
-                          {/* Always show original and converted */}
-                          <span>
-                            {expense.amount.toFixed(2)} {expenseCurrency}
-                            <span style={{ color: '#888', fontSize: '0.95em' }}>
-                              {' '} (≈ {convertedAmount.toFixed(2)} {base})
-                            </span>
-                          </span>
+                    <div className="expense-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0' }}>
+                      {/* Description and payer info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="expense-title" style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{expense.description}</div>
+                        <div className="expense-category" style={{ fontSize: '0.97em', color: '#8b5cf6', fontWeight: 500, margin: '2px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
+                          {expense.category ? expense.category : 'Other'}
+                        </div>
+                        <div className="expense-payer" style={{ fontSize: '0.97em', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+                          Paid by: {memberDisplay(expense.paidBy)}
                         </div>
                       </div>
+                      {/* Amount and delete button as a flex row, no truncation */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                        <div className="expense-amount" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.35em', color: '#222', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          <span>{expense.amount.toFixed(2)} {expenseCurrency}</span>
+                          <span style={{ color: '#888', fontSize: '0.98em', fontWeight: 500, marginTop: 2 }}>
+                            (≈ {convertedAmount.toFixed(2)} {base})
+                          </span>
+                        </div>
+                        {/* Delete button, only for the payer */}
+                        {user && expense.paidBy === user.email && (
+                          <button
+                            className="delete-expense-btn"
+                            style={{ color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer', minWidth: 70 }}
+                            onClick={() => deleteExpense(expense.id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {/* Delete button, only for the payer */}
-                    {user && expense.paidBy === user.email && (
-                      <button
-                        className="delete-expense-btn"
-                        style={{ marginLeft: 12, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '6px 12px', cursor: 'pointer' }}
-                        onClick={() => deleteExpense(expense.id)}
-                      >
-                        Delete
-                      </button>
-                    )}
                   </div>
                 );
               })}

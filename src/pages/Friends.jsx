@@ -151,6 +151,22 @@ const Friends = () => {
 			return;
 		}
 
+		// Check if user exists in users collection
+		try {
+			const usersQuery = query(
+				collection(db, 'users'),
+				where('email', '==', searchEmail.trim())
+			);
+			const userSnapshot = await getDocs(usersQuery);
+			if (userSnapshot.empty) {
+				setError('User with this email does not exist in the app. They need to create an account first.');
+				return;
+			}
+		} catch {
+			setError('Error checking user existence. Please try again.');
+			return;
+		}
+
 		try {
 			// Check if friendship already exists
 			const existingQuery1 = query(
@@ -333,7 +349,7 @@ const Friends = () => {
 					</p>
 				) : (
 					friends.map(friend => (
-						<div key={friend.id} className="friend-item">
+						<div key={friend.id} className="friend-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 							<div className="friend-info">
 								{friend.friendProfile?.profilePicture && (
 									<img 
@@ -357,6 +373,7 @@ const Friends = () => {
 							<button 
 								onClick={() => removeFriend(friend.id)}
 								className="remove-friend-btn"
+								style={{ marginLeft: 'auto' }}
 							>
 								Remove Friend
 							</button>
