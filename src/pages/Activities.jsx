@@ -28,6 +28,20 @@ const currencyOptions = [
   { value: 'JPY', label: 'JPY (Japanese Yen)' },
 ];
 
+// Add category options
+const categoryOptions = [
+  'Food',
+  'Transport',
+  'Groceries',
+  'Utilities',
+  'Rent',
+  'Entertainment',
+  'Shopping',
+  'Health',
+  'Travel',
+  'Other',
+];
+
 const Activities = () => {
   // Local base currency state for this group/activities page
   const [baseCurrency, setBaseCurrency] = useState('SGD');
@@ -218,6 +232,7 @@ const Activities = () => {
         createdAt:    new Date(),
         splits,
         currency:     newExpense.currency || 'SGD',
+        category:     newExpense.category || 'Other',
       });
 
       // Push notifications to all involved except the creator
@@ -330,6 +345,18 @@ const Activities = () => {
     }
   };
 
+  // Delete group handler
+  const deleteGroup = async () => {
+    if (!window.confirm(`Are you sure you want to delete the group '${group.name}'? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db, 'groups', group.id));
+      navigate('/groups');
+    } catch (err) {
+      setError('Failed to delete group');
+      console.error('Delete group error:', err);
+    }
+  };
+
   if (!group) {
     return (
       <div className="no-group-container">
@@ -378,6 +405,16 @@ const Activities = () => {
 
   return (
     <div className="activities-container">
+      {/* Delete group button, visible to all users */}
+      {user && (
+        <button
+          className="delete-group-btn"
+          style={{ marginBottom: 16, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '8px 20px', cursor: 'pointer', fontWeight: 600 }}
+          onClick={deleteGroup}
+        >
+          Delete Group
+        </button>
+      )}
       {/* Base currency selector */}
       <div className="base-currency-section" style={{ marginBottom: 20 }}>
         <label htmlFor="base-currency-select"><strong>Base Currency:</strong> </label>
@@ -444,14 +481,6 @@ const Activities = () => {
             onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
             className="form-input"
           />
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Amount"
-            value={newExpense.amount}
-            onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
-            className="form-input"
-          />
           {/* Currency selector */}
           <select
             value={newExpense.currency}
@@ -460,6 +489,24 @@ const Activities = () => {
           >
             {currencyOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Amount"
+            value={newExpense.amount}
+            onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+            className="form-input"
+          />
+          {/* Category selector */}
+          <select
+            value={newExpense.category}
+            onChange={e => setNewExpense({ ...newExpense, category: e.target.value })}
+            className="form-input"
+          >
+            {categoryOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>
           <select
@@ -472,9 +519,8 @@ const Activities = () => {
               <option key={member} value={member}>{memberDisplay(member)}</option>
             ))}
           </select>
-          
           <Select
-            isMulti                                           
+            isMulti                                            
             options={participantOptions}                     
             value={participantOptions.filter(opt => newExpense.participants.includes(opt.value))}
             onChange={selected => {                         
@@ -671,17 +717,17 @@ const Activities = () => {
             <div className="expenses-list">
               {expenses.map(expense => {
                 // Conversion logic
-                const expenseCurrency = expense.currency || 'SGD';
+                const base = baseCurrency.toUpperCase();
+                const expenseCurrency = (expense.currency || base).toUpperCase();
+                const rateBase = exchangeRates[base];
+                const rateExpense = exchangeRates[expenseCurrency];
                 let convertedAmount = expense.amount;
-                const rate = exchangeRates && exchangeRates[expenseCurrency];
                 if (
-                  expenseCurrency !== baseCurrency &&
-                  typeof rate === 'number' &&
-                  rate !== 0
+                  typeof rateBase === 'number' &&
+                  typeof rateExpense === 'number' &&
+                  rateExpense !== 0
                 ) {
-                  convertedAmount = expense.amount / rate;
-                } else if (expenseCurrency !== baseCurrency) {
-                  convertedAmount = null; // fallback: conversion unavailable
+                  convertedAmount = expense.amount * (rateBase / rateExpense);
                 }
                 return (
                   <div key={expense.id} className="expense-item">
@@ -692,19 +738,12 @@ const Activities = () => {
                       </div>
                       <div className="expense-amount">
                         <div className="expense-total">
-                          {/* Show original and converted */}
+                          {/* Always show original and converted */}
                           <span>
                             {expense.amount.toFixed(2)} {expenseCurrency}
-                            {convertedAmount === null
-                              ? <span style={{ color: 'red' }}> (conversion unavailable)</span>
-                              : expenseCurrency !== baseCurrency && (
-                                  <>
-                                    {' '}<span style={{ color: '#888', fontSize: '0.95em' }}>
-                                      (≈ {convertedAmount.toFixed(2)} {baseCurrency})
-                                    </span>
-                                  </>
-                                )
-                            }
+                            <span style={{ color: '#888', fontSize: '0.95em' }}>
+                              {' '} (≈ {convertedAmount.toFixed(2)} {base})
+                            </span>
                           </span>
                         </div>
                       </div>

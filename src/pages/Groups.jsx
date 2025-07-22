@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { db, auth } from '../config/firebase';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import './stylesheets/groups.css';
@@ -343,6 +343,18 @@ function Groups() {
       navigate(`/activities/${group.id}`, { state: { group } });
     };
 
+    // Add delete group handler
+    const deleteGroup = async (groupId, groupName) => {
+      if (!window.confirm(`Are you sure you want to delete the group '${groupName}'? This cannot be undone.`)) return;
+      try {
+        await deleteDoc(doc(db, 'groups', groupId));
+        fetchGroups();
+      } catch (err) {
+        setError('Failed to delete group');
+        console.error('Delete group error:', err);
+      }
+    };
+
     if (!user) {
       return (
         <div className="login-required">
@@ -536,33 +548,27 @@ function Groups() {
                     <div className="group-recent-expenses" style={{ margin: '8px 0' }}>
                       <div style={{ fontSize: '0.95em', color: '#666', marginBottom: 2 }}>Recent Expenses:</div>
                       {group.recentExpenses.map((expense, idx) => {
-                        // Ensure currency codes are uppercase
-                        const expenseCurrency = (expense.currency || baseCurrency).toUpperCase();
                         const base = baseCurrency.toUpperCase();
+                        const expenseCurrency = (expense.currency || base).toUpperCase();
+                        const rateBase = exchangeRates[base];
+                        const rateExpense = exchangeRates[expenseCurrency];
                         let convertedAmount = expense.amount;
-                        const rate = exchangeRates && exchangeRates[expenseCurrency];
-                        console.log('Expense:', expense.description, 'Expense currency:', expenseCurrency, 'Base:', base, 'Rate:', rate, 'Rates:', exchangeRates);
                         if (
                           expenseCurrency !== base &&
-                          typeof rate === 'number' &&
-                          rate !== 0
+                          typeof rateBase === 'number' &&
+                          typeof rateExpense === 'number' &&
+                          rateExpense !== 0
                         ) {
-                          convertedAmount = expense.amount / rate;
-                        } else if (expenseCurrency !== base) {
-                          console.warn('Conversion unavailable:', { expenseCurrency, base, exchangeRates });
-                          convertedAmount = null;
+                          convertedAmount = expense.amount * (rateBase / rateExpense);
                         }
                         return (
                           <div key={idx} style={{ fontSize: '0.98em', marginBottom: 2 }}>
                             <span style={{ fontWeight: 500 }}>{expense.description}</span>: {expense.amount?.toFixed(2)} {expenseCurrency}
-                            {convertedAmount === null
-                              ? <span style={{ color: 'red' }}> (conversion unavailable)</span>
-                              : expenseCurrency !== base && (
-                                  <span style={{ color: '#888', fontSize: '0.95em' }}>
-                                    {' '} (≈ {convertedAmount.toFixed(2)} {base})
-                                  </span>
-                                )
-                            }
+                            {expenseCurrency !== base && typeof rateBase === 'number' && typeof rateExpense === 'number' && rateExpense !== 0 ? (
+                              <span style={{ color: '#888', fontSize: '0.95em' }}>
+                                {' '} (≈ {convertedAmount.toFixed(2)} {base})
+                              </span>
+                            ) : null}
                           </div>
                         );
                       })}
@@ -574,18 +580,19 @@ function Groups() {
                       <span style={{ color: '#888' }}>Loading balance...</span>
                     ) : (
                       (() => {
-                        // Show both base and converted if base is not SGD
                         const base = baseCurrency.toUpperCase();
-                        const preferred = 'SGD'; // Change this to user's preferred currency if needed
-                        const rate = exchangeRates && exchangeRates[preferred];
-                        let converted = groupBalances[group.id];
+                        const preferred = 'SGD'; // Change to user's preferred currency if needed
+                        const rateBase = exchangeRates[base];
+                        const ratePreferred = exchangeRates[preferred];
                         let showConverted = false;
+                        let converted = groupBalances[group.id];
                         if (
                           base !== preferred &&
-                          typeof rate === 'number' &&
-                          rate !== 0
+                          typeof rateBase === 'number' &&
+                          typeof ratePreferred === 'number' &&
+                          rateBase !== 0
                         ) {
-                          converted = groupBalances[group.id] * rate;
+                          converted = groupBalances[group.id] * (ratePreferred / rateBase);
                           showConverted = true;
                         }
                         return (
