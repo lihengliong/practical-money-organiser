@@ -71,7 +71,8 @@ const Activities = () => {
     paidBy:       '',
     participants: [],
     exactSplits:  {},                                                               
-    percentSplits:{}                                                               
+    percentSplits:{} ,                                                               
+    category:     'Other',
   });
 
   const members = group?.members || [];
@@ -515,7 +516,12 @@ const Activities = () => {
             step="0.01"
             placeholder="Amount"
             value={newExpense.amount}
-            onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || parseFloat(val) >= 0) {
+                setNewExpense({ ...newExpense, amount: val });
+              }
+            }}
             className="form-input"
           />
           {/* Category selector */}
