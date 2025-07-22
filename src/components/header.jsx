@@ -36,7 +36,9 @@ const Header = () => {
         <NavLink to="/analytics" className={({ isActive }) => isActive ? 'active' : ''}>Analytics</NavLink>
         {user && (
           <div className="user-section">
-            <span className="user-email">{user.email}</span>
+            <span className="user-email" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/profile')}>
+              {user.email}
+            </span>
             <button onClick={handleLogout} className="logout-btn">Log out</button>
           </div>
         )}
