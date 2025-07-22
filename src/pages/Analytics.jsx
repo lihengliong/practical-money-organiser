@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, createContext, useContext } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend,
@@ -7,7 +7,7 @@ import {
 import { db, auth } from '../config/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import './analytics.css';
+import './stylesheets/analytics.css';
 
 const pieColors = ["#3b82f6", "#10b981", "#f59e42", "#a78bfa", "#f43f5e", "#6366f1", "#fbbf24", "#ef4444"];
 
@@ -41,10 +41,6 @@ function ExpensesLineChart({ data, baseCurrency }) {
 }
 
 function CategoryPieChart({ data }) {
-  // Custom label to show category name and value
-  const renderCustomizedLabel = ({ name, value, percent }) => {
-    return `${name}: $${value.toFixed(2)} (${(percent * 100).toFixed(1)}%)`;
-  };
   // Custom tooltip to show category and value
   const renderCustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -68,7 +64,7 @@ function CategoryPieChart({ data }) {
           cx="50%"
           cy="50%"
           outerRadius={80}
-          label={renderCustomizedLabel}
+          // No label prop, so no text over the chart
         >
           {data.map((entry, idx) => (
             <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} />
@@ -95,17 +91,24 @@ function ContributionsBarChart({ data }) {
   );
 }
 
+// Context for Pie Chart Mode
+const PieModeContext = createContext();
+
+export function usePieMode() {
+  return useContext(PieModeContext);
+}
+
 export default function Analytics() {
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(true);
   const [lineData, setLineData] = useState([]);
-  const [pieData, setPieData] = useState([]);
+  const [allExpenses, setAllExpenses] = useState([]);
   const [barData, setBarData] = useState([]);
   const [baseCurrency] = useState('SGD'); // Replace with actual state/prop if you want to make it dynamic
-
   // Get current month name for display
   const now = new Date();
   const monthName = now.toLocaleString('default', { month: 'long' });
+  const [pieMode, setPieMode] = useState('month'); // 'month' or 'all'
 
   useEffect(() => {
     if (!user) return;
@@ -116,35 +119,36 @@ export default function Analytics() {
       const groups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       if (!groups.length) {
         setLineData([]);
-        setPieData([]);
+        setAllExpenses([]);
         setBarData([]);
         setLoading(false);
         return;
       }
       // 2. Fetch all expenses for those groups
-      let allExpenses = [];
+      let allExpensesArr = [];
       for (const group of groups) {
         const expensesSnapshot = await getDocs(query(collection(db, 'expenses'), where('groupId', '==', group.id)));
-        allExpenses = allExpenses.concat(expensesSnapshot.docs.map(doc => ({ ...doc.data(), group })));
+        allExpensesArr = allExpensesArr.concat(expensesSnapshot.docs.map(doc => ({ ...doc.data(), group })));
       }
+      setAllExpenses(allExpensesArr);
       // 3. Calculate summary and chart data
       const thisMonth = now.getMonth();
       const thisYear = now.getFullYear();
       // --- Summary Cards ---
       // Total group expenses this month
-      const totalThisMonth = allExpenses
+      const totalThisMonth = allExpensesArr
         .filter(e => {
           const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
           return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
         })
         .reduce((sum, e) => sum + (typeof e.amount === 'number' ? e.amount : 0), 0);
       // My personal contributions
-      const myContributions = allExpenses
+      const myContributions = allExpensesArr
         .filter(e => e.paidBy === user.email)
         .reduce((sum, e) => sum + (typeof e.amount === 'number' ? e.amount : 0), 0);
       // Net balance (owes/owed)
       let net = 0;
-      allExpenses.forEach(e => {
+      allExpensesArr.forEach(e => {
         if (!e.splits) return;
         if (e.paidBy === user.email) {
           e.splits.forEach(split => {
@@ -157,7 +161,7 @@ export default function Analytics() {
       });
       // Most frequent payer
       const payerCounts = {};
-      allExpenses.forEach(e => {
+      allExpensesArr.forEach(e => {
         if (!e.paidBy) return;
         payerCounts[e.paidBy] = (payerCounts[e.paidBy] || 0) + 1;
       });
@@ -179,7 +183,7 @@ export default function Analytics() {
         monthMap[`${d.getFullYear()}-${d.getMonth()}`] = label;
       }
       const lineAgg = {};
-      allExpenses.forEach(e => {
+      allExpensesArr.forEach(e => {
         const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
         const key = `${d.getFullYear()}-${d.getMonth()}`;
         if (monthMap[key]) {
@@ -187,24 +191,9 @@ export default function Analytics() {
         }
       });
       setLineData(months.map(m => ({ month: m, total: lineAgg[m] || 0 })));
-      // --- Pie Chart: Expense breakdown by category (this month only) ---
-      const catAgg = {};
-      allExpenses
-        .filter(e => {
-          const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
-          return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-        })
-        .forEach(e => {
-          let cat = e.category || 'Other';
-          if (typeof cat === 'string') {
-            cat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
-          }
-          catAgg[cat] = (catAgg[cat] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
-        });
-      setPieData(Object.entries(catAgg).map(([name, value]) => ({ name, value })));
       // --- Bar Chart: Member contributions ---
       const memberAgg = {};
-      allExpenses.forEach(e => {
+      allExpensesArr.forEach(e => {
         if (!e.paidBy) return;
         memberAgg[e.paidBy] = (memberAgg[e.paidBy] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
       });
@@ -217,7 +206,8 @@ export default function Analytics() {
   if (loading) return <div className="p-8">Loading analytics...</div>;
 
   return (
-    <div className="analytics-container">
+    <PieModeContext.Provider value={{ pieMode, setPieMode }}>
+      <div className="analytics-container">
       {/* Centralized Summary Cards Section */}
       <div className="analytics-summary-wrapper">
         <div className="analytics-summary-grid">
@@ -251,18 +241,95 @@ export default function Analytics() {
             <ExpensesLineChart data={lineData} baseCurrency={baseCurrency} />
           </div>
         </div>
-        <div className="analytics-chart-card">
-          <div className="analytics-chart-title">Expense Breakdown by Category</div>
-          <div className="analytics-chart-inner">
-            <CategoryPieChart data={pieData} />
-          </div>
-        </div>
+        <ExpenseBreakdownByCategory allExpenses={allExpenses} />
       </div>
       <div className="analytics-chart-card analytics-chart-card-full">
         <div className="analytics-chart-title">Member Contributions</div>
         <div className="analytics-chart-inner">
           <ContributionsBarChart data={barData} />
         </div>
+      </div>
+    </div>
+    </PieModeContext.Provider>
+  );
+}
+
+// New component for the pie chart section
+function ExpenseBreakdownByCategory({ allExpenses }) {
+  const { pieMode, setPieMode } = usePieMode();
+  const [pieData, setPieData] = useState([]);
+  useEffect(() => {
+    // Filter and aggregate pie data based on pieMode
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    let catAgg = {};
+    if (pieMode === 'month') {
+      allExpenses
+        .filter(e => {
+          const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
+          return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+        })
+        .forEach(e => {
+          let cat = e.category || 'Other';
+          if (typeof cat === 'string') {
+            cat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+          }
+          catAgg[cat] = (catAgg[cat] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
+        });
+    } else {
+      allExpenses.forEach(e => {
+        let cat = e.category || 'Other';
+        if (typeof cat === 'string') {
+          cat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+        }
+        catAgg[cat] = (catAgg[cat] || 0) + (typeof e.amount === 'number' ? e.amount : 0);
+      });
+    }
+    setPieData(Object.entries(catAgg).map(([name, value]) => ({ name, value })));
+  }, [allExpenses, pieMode]);
+  return (
+    <div className="analytics-chart-card">
+      <div className="analytics-chart-title">Expense Breakdown by Category</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, justifyContent: 'center' }}>
+        <span style={{ fontSize: '0.89em', color: pieMode === 'month' ? '#2563eb' : '#64748b', fontWeight: pieMode === 'month' ? 600 : 400, letterSpacing: '0.01em' }}>This Month</span>
+        <label className="pie-toggle-switch" style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, margin: '0 4px', verticalAlign: 'middle' }}>
+          <input
+            type="checkbox"
+            checked={pieMode === 'all'}
+            onChange={() => setPieMode(pieMode === 'month' ? 'all' : 'month')}
+            style={{ opacity: 0, width: 0, height: 0 }}
+            aria-label="Toggle between This Month and All Time"
+          />
+          <span className="pie-toggle-slider" style={{
+            position: 'absolute',
+            cursor: 'pointer',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: pieMode === 'all' ? '#2563eb' : '#cbd5e1',
+            borderRadius: 26,
+            transition: 'background 0.2s',
+          }}>
+            <span style={{
+              position: 'absolute',
+              height: 22,
+              width: 22,
+              left: pieMode === 'all' ? 24 : 2,
+              bottom: 2,
+              background: '#fff',
+              borderRadius: '50%',
+              boxShadow: '0 1px 4px rgba(30,41,59,0.08)',
+              transition: 'left 0.2s',
+              border: '1.5px solid #cbd5e1',
+            }} />
+          </span>
+        </label>
+        <span style={{ fontSize: '0.89em', color: pieMode === 'all' ? '#2563eb' : '#64748b', fontWeight: pieMode === 'all' ? 600 : 400, letterSpacing: '0.01em' }}>All Time</span>
+      </div>
+      <div className="analytics-chart-inner">
+        <CategoryPieChart data={pieData} />
       </div>
     </div>
   );
