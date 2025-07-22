@@ -4,6 +4,7 @@ import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import './stylesheets/groups.css';
+import { fetchExchangeRates } from '../utils/currency';
 
 function Groups() {
     const [groupName, setGroupName] = useState('');
@@ -17,6 +18,11 @@ function Groups() {
     const [addingEmail, setAddingEmail] = useState(false);
     const navigate = useNavigate();
     const [groupBalances, setGroupBalances] = useState({});
+    // Add state for base currency and exchange rates
+    const [baseCurrency, setBaseCurrency] = useState('SGD'); // Default to SGD
+    const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
+    const [fetchingRates, setFetchingRates] = useState(false);
+    const [loadingRates, setLoadingRates] = useState(true);
 
     useEffect(() => {
       if (user) {
@@ -110,7 +116,7 @@ function Groups() {
           group.members && group.members.includes(user.email)
         );
         
-        // Fetch display names for group members
+        // Fetch display names for group members and recent expenses for each group
         const enrichedGroups = await Promise.all(
           userGroups.map(async group => {
             const memberProfiles = await Promise.all(
@@ -119,9 +125,20 @@ function Groups() {
                 return { email, displayName: profile.displayName };
               })
             );
+            // Fetch up to 3 most recent expenses for this group
+            const expensesSnapshot = await getDocs(query(collection(db, 'expenses'), where('groupId', '==', group.id)));
+            const expenses = expensesSnapshot.docs
+              .map(doc => doc.data())
+              .sort((a, b) => {
+                const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                const db = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+                return db - da;
+              })
+              .slice(0, 3);
             return {
               ...group,
               memberProfiles,
+              recentExpenses: expenses,
             };
           })
         );
@@ -135,7 +152,27 @@ function Groups() {
       }
     };
 
-    // Fetch group balances for the user
+    // Fetch exchange rates when baseCurrency changes
+    useEffect(() => {
+      const fetchRates = async () => {
+        setFetchingRates(true);
+        setLoadingRates(true);
+        try {
+          const rates = await fetchExchangeRates(baseCurrency);
+          setExchangeRates(rates);
+          console.log('ExchangeRates in component:', rates);
+        } catch (err) {
+          console.error('Error fetching exchange rates:', err);
+          setExchangeRates({ [baseCurrency]: 1 });
+        } finally {
+          setFetchingRates(false);
+          setLoadingRates(false);
+        }
+      };
+      fetchRates();
+    }, [baseCurrency]);
+
+    // Fetch group balances for the user (with currency conversion)
     useEffect(() => {
       const fetchAllGroupBalances = async () => {
         if (!user || !groups.length) return;
@@ -150,18 +187,30 @@ function Groups() {
           // Calculate balance
           let balance = 0;
           expenses.forEach(expense => {
+            // Default to baseCurrency if no currency field
+            const expenseCurrency = expense.currency || baseCurrency;
             if (expense.paidBy === user.email) {
               expense.splits.forEach(split => {
                 if (split.member !== user.email) {
-                  balance += split.amountOwed;
+                  if (expenseCurrency !== baseCurrency && exchangeRates[expenseCurrency]) {
+                    balance += (split.amountOwed / exchangeRates[expenseCurrency]);
+                  } else {
+                    balance += split.amountOwed;
+                  }
                 }
               });
             } else if (expense.splits.some(s => s.member === user.email)) {
               const userSplit = expense.splits.find(s => s.member === user.email);
-              balance -= userSplit.amountOwed;
+              if (expenseCurrency !== baseCurrency && exchangeRates[expenseCurrency]) {
+                balance -= (userSplit.amountOwed / exchangeRates[expenseCurrency]);
+              } else {
+                balance -= userSplit.amountOwed;
+              }
             }
           });
           payments.forEach(payment => {
+            // Assume payments are always in base currency for now
+            // If you want to support payment currency, add similar conversion logic
             if (payment.fromUser === user.email) {
               balance += payment.amount;
             } else if (payment.toUser === user.email) {
@@ -173,7 +222,7 @@ function Groups() {
         setGroupBalances(balances);
       };
       fetchAllGroupBalances();
-    }, [user, groups]);
+    }, [user, groups, exchangeRates, baseCurrency]);
 
     const toggleFriendSelection = (friendEmail) => {
       setSelectedMembers(prev => {
@@ -316,6 +365,35 @@ function Groups() {
     
     return (
       <div className="groups-container">
+        {loadingRates && (
+          <div style={{ color: '#888', marginBottom: 16 }}>Loading exchange rates...</div>
+        )}
+        {/* Base currency selector */}
+        <div className="base-currency-section" style={{ marginBottom: 20 }}>
+          <label htmlFor="base-currency-select"><strong>Base Currency:</strong> </label>
+          <select
+            id="base-currency-select"
+            value={baseCurrency}
+            onChange={e => setBaseCurrency(e.target.value)}
+            disabled={fetchingRates}
+            style={{ marginLeft: 8, padding: '2px 8px' }}
+          >
+            {/* Add more currencies as needed */}
+            <option value="SGD">SGD (Singapore Dollar)</option>
+            <option value="USD">USD (US Dollar)</option>
+            <option value="EUR">EUR (Euro)</option>
+            <option value="MYR">MYR (Malaysian Ringgit)</option>
+            <option value="IDR">IDR (Indonesian Rupiah)</option>
+            <option value="THB">THB (Thai Baht)</option>
+            <option value="VND">VND (Vietnamese Dong)</option>
+            <option value="PHP">PHP (Philippine Peso)</option>
+            <option value="INR">INR (Indian Rupee)</option>
+            <option value="CNY">CNY (Chinese Yuan)</option>
+            <option value="JPY">JPY (Japanese Yen)</option>
+            {/* ... */}
+          </select>
+          {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
+        </div>
         <h2>Create a Group</h2>
         
         {error && <div className="error-message">{error}</div>}
@@ -453,16 +531,89 @@ function Groups() {
                       ? (group.memberProfiles.length > 3 && ` +${group.memberProfiles.length - 3} more`)
                       : (group.members.length > 3 && ` +${group.members.length - 3} more`)}
                   </p>
+                  {/* Recent expenses */}
+                  {group.recentExpenses && group.recentExpenses.length > 0 && !loadingRates && (
+                    <div className="group-recent-expenses" style={{ margin: '8px 0' }}>
+                      <div style={{ fontSize: '0.95em', color: '#666', marginBottom: 2 }}>Recent Expenses:</div>
+                      {group.recentExpenses.map((expense, idx) => {
+                        // Ensure currency codes are uppercase
+                        const expenseCurrency = (expense.currency || baseCurrency).toUpperCase();
+                        const base = baseCurrency.toUpperCase();
+                        let convertedAmount = expense.amount;
+                        const rate = exchangeRates && exchangeRates[expenseCurrency];
+                        console.log('Expense:', expense.description, 'Expense currency:', expenseCurrency, 'Base:', base, 'Rate:', rate, 'Rates:', exchangeRates);
+                        if (
+                          expenseCurrency !== base &&
+                          typeof rate === 'number' &&
+                          rate !== 0
+                        ) {
+                          convertedAmount = expense.amount / rate;
+                        } else if (expenseCurrency !== base) {
+                          console.warn('Conversion unavailable:', { expenseCurrency, base, exchangeRates });
+                          convertedAmount = null;
+                        }
+                        return (
+                          <div key={idx} style={{ fontSize: '0.98em', marginBottom: 2 }}>
+                            <span style={{ fontWeight: 500 }}>{expense.description}</span>: {expense.amount?.toFixed(2)} {expenseCurrency}
+                            {convertedAmount === null
+                              ? <span style={{ color: 'red' }}> (conversion unavailable)</span>
+                              : expenseCurrency !== base && (
+                                  <span style={{ color: '#888', fontSize: '0.95em' }}>
+                                    {' '} (≈ {convertedAmount.toFixed(2)} {base})
+                                  </span>
+                                )
+                            }
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   {/* Balance summary line */}
                   <div className="group-balance-summary">
                     {groupBalances[group.id] === undefined ? (
                       <span style={{ color: '#888' }}>Loading balance...</span>
-                    ) : groupBalances[group.id] > 0 ? (
-                      <span style={{ color: 'green', fontWeight: 600 }}>You are owed ${groupBalances[group.id].toFixed(2)}</span>
-                    ) : groupBalances[group.id] < 0 ? (
-                      <span style={{ color: 'red', fontWeight: 600 }}>You owe ${Math.abs(groupBalances[group.id]).toFixed(2)}</span>
                     ) : (
-                      <span style={{ color: '#007bff', fontWeight: 600 }}>All settled up!</span>
+                      (() => {
+                        // Show both base and converted if base is not SGD
+                        const base = baseCurrency.toUpperCase();
+                        const preferred = 'SGD'; // Change this to user's preferred currency if needed
+                        const rate = exchangeRates && exchangeRates[preferred];
+                        let converted = groupBalances[group.id];
+                        let showConverted = false;
+                        if (
+                          base !== preferred &&
+                          typeof rate === 'number' &&
+                          rate !== 0
+                        ) {
+                          converted = groupBalances[group.id] * rate;
+                          showConverted = true;
+                        }
+                        return (
+                          <>
+                            {groupBalances[group.id] > 0 ? (
+                              <span style={{ color: 'green', fontWeight: 600 }}>
+                                You are owed ${groupBalances[group.id].toFixed(2)} {base}
+                                {showConverted && (
+                                  <span style={{ color: '#007bff', fontWeight: 500, marginLeft: 8 }}>
+                                    (≈ {converted.toFixed(2)} {preferred})
+                                  </span>
+                                )}
+                              </span>
+                            ) : groupBalances[group.id] < 0 ? (
+                              <span style={{ color: 'red', fontWeight: 600 }}>
+                                You owe ${Math.abs(groupBalances[group.id]).toFixed(2)} {base}
+                                {showConverted && (
+                                  <span style={{ color: '#007bff', fontWeight: 500, marginLeft: 8 }}>
+                                    (≈ {Math.abs(converted).toFixed(2)} {preferred})
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#007bff', fontWeight: 600 }}>All settled up!</span>
+                            )}
+                          </>
+                        );
+                      })()
                     )}
                   </div>
                   <small className="group-creator">

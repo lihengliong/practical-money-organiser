@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../config/firebase';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Select from 'react-select';
 import './stylesheets/activities.css';
+import { fetchExchangeRates } from '../utils/currency';
 
 const SPLIT_TYPES = [ 
   { key: 'equal',   label: 'Equal Splits' },
@@ -12,7 +13,26 @@ const SPLIT_TYPES = [
   { key: 'exact',   label: 'Exact Amount Splits' }
 ]
 
+// Currency options for use in both form and logic
+const currencyOptions = [
+  { value: 'SGD', label: 'SGD (Singapore Dollar)' },
+  { value: 'USD', label: 'USD (US Dollar)' },
+  { value: 'EUR', label: 'EUR (Euro)' },
+  { value: 'MYR', label: 'MYR (Malaysian Ringgit)' },
+  { value: 'IDR', label: 'IDR (Indonesian Rupiah)' },
+  { value: 'THB', label: 'THB (Thai Baht)' },
+  { value: 'VND', label: 'VND (Vietnamese Dong)' },
+  { value: 'PHP', label: 'PHP (Philippine Peso)' },
+  { value: 'INR', label: 'INR (Indian Rupee)' },
+  { value: 'CNY', label: 'CNY (Chinese Yuan)' },
+  { value: 'JPY', label: 'JPY (Japanese Yen)' },
+];
+
 const Activities = () => {
+  // Local base currency state for this group/activities page
+  const [baseCurrency, setBaseCurrency] = useState('SGD');
+  const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
+
   const location = useLocation();
   const navigate = useNavigate();
   const [user] = useAuthState(auth);
@@ -72,6 +92,20 @@ const Activities = () => {
     console.log('Starting data fetch...');
     fetchData();
   }, [group, user]);
+
+  // Fetch exchange rates when baseCurrency changes
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const rates = await fetchExchangeRates(baseCurrency);
+        setExchangeRates(rates);
+      } catch {
+        // fallback: just SGD
+        setExchangeRates({ [baseCurrency]: 1 });
+      }
+    };
+    fetchRates();
+  }, [baseCurrency]);
 
   const fetchData = async () => {
     try {
@@ -182,7 +216,8 @@ const Activities = () => {
         splitType:    splitType,
         participants: involved,
         createdAt:    new Date(),
-        splits
+        splits,
+        currency:     newExpense.currency || 'SGD',
       });
 
       // Push notifications to all involved except the creator
@@ -283,6 +318,18 @@ const Activities = () => {
     return balances;
   };
 
+  // Delete expense handler
+  const deleteExpense = async (expenseId) => {
+    if (!window.confirm('Are you sure you want to delete this expense?')) return;
+    try {
+      await deleteDoc(doc(db, 'expenses', expenseId));
+      fetchData();
+    } catch (err) {
+      setError('Failed to delete expense');
+      console.error('Delete error:', err);
+    }
+  };
+
   if (!group) {
     return (
       <div className="no-group-container">
@@ -331,6 +378,20 @@ const Activities = () => {
 
   return (
     <div className="activities-container">
+      {/* Base currency selector */}
+      <div className="base-currency-section" style={{ marginBottom: 20 }}>
+        <label htmlFor="base-currency-select"><strong>Base Currency:</strong> </label>
+        <select
+          id="base-currency-select"
+          value={baseCurrency}
+          onChange={e => setBaseCurrency(e.target.value)}
+          style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, border: '1px solid #ccc' }}
+        >
+          {currencyOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
       {/* Header */}
       <div className="activities-header">
         <div>
@@ -391,6 +452,16 @@ const Activities = () => {
             onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
             className="form-input"
           />
+          {/* Currency selector */}
+          <select
+            value={newExpense.currency}
+            onChange={e => setNewExpense({ ...newExpense, currency: e.target.value })}
+            className="form-input"
+          >
+            {currencyOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
           <select
             value={newExpense.paidBy}
             onChange={(e) => setNewExpense({...newExpense, paidBy: e.target.value})}
@@ -562,23 +633,20 @@ const Activities = () => {
             {/* Quick Settle Up */}
             <div className="settle-up-section">
               <h3>Quick Settle Up</h3>
-              {Object.entries(balances).filter(([_, balance]) => balance < 0).length === 0 ? (
+              {Object.entries(balances).filter(([, balance]) => balance < 0).length === 0 ? (
                 <div className="all-settled">
                   All settled up! No one owes money.
                 </div>
               ) : (
                 Object.entries(balances)
-                  .filter(([_, balance]) => balance < 0)
+                  .filter(([, balance]) => balance < 0)
                   .map(([member, balance]) => {
                     const creditors = Object.entries(balances)
-                      .filter(([_, bal]) => bal > 0)
-                      .sort(([_, a], [__, b]) => b - a);
-                    
+                      .filter(([, bal]) => bal > 0)
+                      .sort(([, a], [, b]) => b - a);
                     if (creditors.length === 0) return null;
-                    
                     const [creditor] = creditors[0];
                     const amountOwed = Math.abs(balance);
-                    
                     return (
                       <div key={member} className="settle-up-item">
                         <span>
@@ -601,26 +669,59 @@ const Activities = () => {
           <div className="expenses-section">
             <h2>Recent Expenses</h2>
             <div className="expenses-list">
-              {expenses.map(expense => (
-                <div key={expense.id} className="expense-item">
-                  <div className="expense-content">
-                    <div>
-                      <div className="expense-title">{expense.description}</div>
-                      <div className="expense-payer">Paid by: {memberDisplay(expense.paidBy)}</div>
-                    </div>
-                    <div className="expense-amount">
-                      <div className="expense-total">
-                        ${
-                          (
-                            expense.splits.find(s => s.member === user.email)
-                            ?.amountOwed || 0
-                          ).toFixed(2)
-                        }
+              {expenses.map(expense => {
+                // Conversion logic
+                const expenseCurrency = expense.currency || 'SGD';
+                let convertedAmount = expense.amount;
+                const rate = exchangeRates && exchangeRates[expenseCurrency];
+                if (
+                  expenseCurrency !== baseCurrency &&
+                  typeof rate === 'number' &&
+                  rate !== 0
+                ) {
+                  convertedAmount = expense.amount / rate;
+                } else if (expenseCurrency !== baseCurrency) {
+                  convertedAmount = null; // fallback: conversion unavailable
+                }
+                return (
+                  <div key={expense.id} className="expense-item">
+                    <div className="expense-content">
+                      <div>
+                        <div className="expense-title">{expense.description}</div>
+                        <div className="expense-payer">Paid by: {memberDisplay(expense.paidBy)}</div>
+                      </div>
+                      <div className="expense-amount">
+                        <div className="expense-total">
+                          {/* Show original and converted */}
+                          <span>
+                            {expense.amount.toFixed(2)} {expenseCurrency}
+                            {convertedAmount === null
+                              ? <span style={{ color: 'red' }}> (conversion unavailable)</span>
+                              : expenseCurrency !== baseCurrency && (
+                                  <>
+                                    {' '}<span style={{ color: '#888', fontSize: '0.95em' }}>
+                                      (≈ {convertedAmount.toFixed(2)} {baseCurrency})
+                                    </span>
+                                  </>
+                                )
+                            }
+                          </span>
                         </div>
                       </div>
+                    </div>
+                    {/* Delete button, only for the payer */}
+                    {user && expense.paidBy === user.email && (
+                      <button
+                        className="delete-expense-btn"
+                        style={{ marginLeft: 12, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '6px 12px', cursor: 'pointer' }}
+                        onClick={() => deleteExpense(expense.id)}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
