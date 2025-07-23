@@ -202,11 +202,24 @@ const Activities = () => {
   
     let splits = [];
         if (splitType === 'equal') {
-          const each = amount / involved.length;
-          splits = involved.map(m => ({
-            member:     m,
-            amountOwed: parseFloat(each.toFixed(2))
-          }));
+          // Improved equal split: distribute rounding error
+          const n = involved.length;
+          if (n === 1 && involved[0] === newExpense.paidBy) {
+            splits = [];
+          } else {
+            const baseShare = Math.floor((amount / n) * 100) / 100; // round down to 2 decimals
+            let splitVals = Array(n).fill(baseShare);
+            let totalAssigned = baseShare * n;
+            let remainder = Math.round((amount - totalAssigned) * 100); // in cents
+            for (let i = 0; i < remainder; i++) {
+              splitVals[i] += 0.01;
+            }
+            splitVals = splitVals.map(v => Number(v.toFixed(2)));
+            splits = involved.map((m, i) => ({
+              member: m,
+              amountOwed: splitVals[i]
+            }));
+          }
         } else if (splitType === 'percent') {
           splits = involved.map(m => {
             const pct = parseFloat(newExpense.percentSplits[m]) || 0;
@@ -245,14 +258,13 @@ const Activities = () => {
         expenseDescription: newExpense.description,
         addedBy: user.email,
         createdAt: new Date(),
-        message: `Expense created in ${group.name}`
+        message: `$${amount} for ${newExpense.description} has been logged into ${group.name}`
       });
 
       // Notify each user who owes money (not the payer)
       await Promise.all(
         splits.filter(split => split.member !== user.email).map(split => {
           const payerName = memberDisplay(user.email, false);
-          const payeeName = memberDisplay(split.member, false);
           return addDoc(collection(db, 'notifications'), {
             type: 'expense_request',
             user: split.member,
@@ -318,7 +330,7 @@ const Activities = () => {
           groupId: group.id,
           groupName: group.name,
           createdAt: new Date(),
-          message: `You paid ${payeeName} $${amount} in ${group.name}`
+          message: `You have settled up with ${payeeName}!`
         }),
         // Payee notification
         addDoc(collection(db, 'notifications'), {
@@ -330,7 +342,7 @@ const Activities = () => {
           groupId: group.id,
           groupName: group.name,
           createdAt: new Date(),
-          message: `${payerName} has paid you $${amount} in ${group.name}`
+          message: `${payerName} has paid you $${Number(amount).toFixed(2)} in ${group.name}`
         })
       ]);
 
@@ -354,6 +366,10 @@ const Activities = () => {
     });
     // Calculate balances in base currency
     expenses.forEach(expense => {
+      // Ignore single-person expenses (no one owes anyone)
+      if (expense.splits && expense.splits.length === 1 && expense.splits[0].member === expense.paidBy) {
+        return;
+      }
       const expenseCurrency = (expense.currency || baseCurrency).toUpperCase();
       const base = baseCurrency.toUpperCase();
       const rateBase = exchangeRates[base];
@@ -370,7 +386,13 @@ const Activities = () => {
         }
         return amount;
       };
-      if (expense.paidBy && Object.prototype.hasOwnProperty.call(balances, expense.paidBy)) {
+      // Only add to payer's balance if there are splits and more than one participant
+      if (
+        expense.paidBy &&
+        Object.prototype.hasOwnProperty.call(balances, expense.paidBy) &&
+        expense.splits &&
+        expense.splits.length > 1
+      ) {
         balances[expense.paidBy] += convert(expense.amount);
       }
       if (expense.splits) {
@@ -715,7 +737,7 @@ const Activities = () => {
               {Object.entries(balances).map(([member, balance]) => (
                 <div 
                   key={member} 
-                  className={`balance-item ${balance === 0 ? 'neutral' : balance > 0 ? 'positive' : 'negative'}`}
+                  className={`balance-item ${balance > 0.01 ? 'positive' : balance < -0.01 ? 'negative' : 'neutral'}`}
                 >
                   <div className="balance-name">{memberDisplay(member)}</div>
                   <div className="balance-amount">
@@ -767,7 +789,14 @@ const Activities = () => {
           <div className="expenses-section">
             <h2>Recent Expenses</h2>
             <div className="expenses-list">
-              {expenses.map(expense => {
+              {expenses
+                .slice()
+                .sort((a, b) => {
+                  const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                  const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+                  return bDate - aDate;
+                })
+                .map(expense => {
                 // Conversion logic
                 const base = baseCurrency.toUpperCase();
                 const expenseCurrency = (expense.currency || base).toUpperCase();
@@ -827,14 +856,33 @@ const Activities = () => {
         <div className="payment-history">
           <h2>Payment History</h2>
           <div className="payment-history-container">
-            {payments.map(payment => (
-              <div key={payment.id} className="payment-item">
-                <strong>{memberDisplay(payment.fromUser, false)}</strong> paid <strong>{memberDisplay(payment.toUser, false)}</strong> ${payment.amount}
-                <small className="payment-date">
-                  {payment.paymentDate.toDate?.().toLocaleDateString() || 'Recently'}
-                </small>
-              </div>
-            ))}
+            {payments
+              .slice()
+              .sort((a, b) => {
+                const aDate = a.paymentDate?.toDate ? a.paymentDate.toDate() : new Date(a.paymentDate);
+                const bDate = b.paymentDate?.toDate ? b.paymentDate.toDate() : new Date(b.paymentDate);
+                return bDate - aDate;
+              })
+              .map(payment => {
+                const fromName = memberDisplay(payment.fromUser, false);
+                const toName = memberDisplay(payment.toUser, false);
+                const getInitials = name => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+                return (
+                  <div key={payment.id} className="payment-item improved-payment-item modern-payment-item">
+                    <span className="payment-avatar modern-avatar" style={{background:'#e3f2fd',color:'#1976d2',border:'2px solid #b7e4c7'}}>{getInitials(fromName)}</span>
+                    <span className="payment-names">
+                      <strong style={{color:'#1976d2'}}>{fromName}</strong>
+                      <span className="payment-arrow">→</span>
+                      <span className="payment-avatar modern-avatar" style={{background:'#e8f5e9',color:'#388e3c',marginRight:8,border:'2px solid #b7e4c7'}}>{getInitials(toName)}</span>
+                      <strong style={{color:'#388e3c'}}>{toName}</strong>
+                    </span>
+                    <span className="payment-amount modern-amount">${Number(payment.amount).toFixed(2)}</span>
+                    <span className="payment-date modern-date">
+                      {payment.paymentDate.toDate?.().toLocaleDateString() || 'Recently'}
+                    </span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}

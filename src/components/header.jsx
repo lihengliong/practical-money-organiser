@@ -47,6 +47,15 @@ const Header = () => {
     await Promise.all(notifications.map(n => deleteDoc(doc(db, 'notifications', n.id))));
   };
 
+  // Delete a single notification
+  const deleteNotification = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'notifications', id));
+    } catch (err) {
+      console.error('Failed to delete notification', err);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -84,6 +93,7 @@ const Header = () => {
         onMarkRead={markAllRead}
         user={user}
         onClearAll={clearAllNotifications}
+        onDeleteNotification={deleteNotification}
       />
     </header>
   )

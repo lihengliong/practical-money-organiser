@@ -267,6 +267,26 @@ body, .app-root, #root {
   letter-spacing: 0.01em;
 }
 
+.notification-item-sidebar {
+  position: relative;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.notification-item-sidebar.slide-out {
+  transform: translateX(120%);
+  opacity: 0;
+}
+.notification-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #888;
+  z-index: 2;
+}
+
 /* Notification sidebar overlay */
 .notification-sidebar-overlay {
   position: fixed;
