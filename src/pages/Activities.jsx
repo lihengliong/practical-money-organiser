@@ -237,19 +237,32 @@ const Activities = () => {
         category:     newExpense.category || 'Other',
       });
 
+      // Notify payer (creator)
+      await addDoc(collection(db, 'notifications'), {
+        type: 'expense_created',
+        user: user.email,
+        groupName: group.name,
+        expenseDescription: newExpense.description,
+        addedBy: user.email,
+        createdAt: new Date(),
+        message: `Expense created in ${group.name}`
+      });
+
       // Notify each user who owes money (not the payer)
       await Promise.all(
-        splits.filter(split => split.member !== user.email).map(split =>
-          addDoc(collection(db, 'notifications'), {
+        splits.filter(split => split.member !== user.email).map(split => {
+          const payerName = memberDisplay(user.email, false);
+          const payeeName = memberDisplay(split.member, false);
+          return addDoc(collection(db, 'notifications'), {
             type: 'expense_request',
             user: split.member,
             groupName: group.name,
             expenseDescription: newExpense.description,
             addedBy: user.email,
             createdAt: new Date(),
-            message: `You owe $${split.amountOwed.toFixed(2)} for '${newExpense.description}' in group '${group.name}'.`
-          })
-        )
+            message: `You owe ${payerName} $${split.amountOwed.toFixed(2)} for ${newExpense.description} in ${group.name}`
+          });
+        })
       );
 
       // Push notifications to all involved except the creator (legacy, can be removed if not needed)
@@ -292,19 +305,33 @@ const Activities = () => {
       });
 
       // Push notifications for both payer and payee
-      const notificationData = {
-        type: 'payment',
-        fromUser,
-        toUser,
-        amount,
-        groupId: group.id,
-        groupName: group.name,
-        createdAt: new Date(),
-        message: `${fromUser} paid ${toUser} $${amount} in group '${group.name}'`
-      };
+      const payerName = memberDisplay(fromUser, false);
+      const payeeName = memberDisplay(toUser, false);
       await Promise.all([
-        addDoc(collection(db, 'notifications'), { ...notificationData, user: fromUser }),
-        addDoc(collection(db, 'notifications'), { ...notificationData, user: toUser })
+        // Payer notification
+        addDoc(collection(db, 'notifications'), {
+          type: 'payment',
+          user: fromUser,
+          fromUser,
+          toUser,
+          amount,
+          groupId: group.id,
+          groupName: group.name,
+          createdAt: new Date(),
+          message: `You paid ${payeeName} $${amount} in ${group.name}`
+        }),
+        // Payee notification
+        addDoc(collection(db, 'notifications'), {
+          type: 'payment',
+          user: toUser,
+          fromUser,
+          toUser,
+          amount,
+          groupId: group.id,
+          groupName: group.name,
+          createdAt: new Date(),
+          message: `${payerName} has paid you $${amount} in ${group.name}`
+        })
       ]);
 
       console.log('Payment recorded, refreshing data...');

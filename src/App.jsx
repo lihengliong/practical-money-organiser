@@ -4,7 +4,6 @@ import Friends from './pages/Friends'
 import Groups from './pages/Groups'
 import Activities from './pages/Activities'
 import Ledger from './pages/Ledger'
-import Notifications  from './pages/Notifications'
 import Analytics from './pages/Analytics'
 import Profile from './pages/Profile';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
@@ -20,7 +19,6 @@ function App() {
           <Route path="/groups" element={<Groups />} />
           <Route path="/activities/:groupId" element={<Activities />} />
           <Route path="/ledger" element={<Ledger />} />
-          <Route path="/notifications" element={<Notifications />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
