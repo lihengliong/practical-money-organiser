@@ -32,11 +32,19 @@ function ExpensesLineChart({ data, baseCurrency }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 36 }}>
-        <CartesianGrid strokeDasharray="3 3" />
+        <defs>
+          <linearGradient id="colorLine" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.7}/>
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="month" tick={renderCustomTick} interval={0} />
-        <YAxis label={{ value: baseCurrency, angle: -90, position: 'insideLeft', offset: 10, fontSize: 14, fill: '#64748b' }} />
-        <Tooltip />
-        <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5 }} />
+        <YAxis label={{ value: baseCurrency, angle: -90, position: 'insideLeft', offset: 10, fontSize: 14, fill: '#64748b' }} tick={{ fill: '#64748b', fontWeight: 600, fontSize: 14 }} axisLine={false} />
+        <Tooltip contentStyle={{ borderRadius: 12, boxShadow: '0 4px 24px #3b82f622', border: 'none', background: '#fff' }} labelStyle={{ color: '#2563eb', fontWeight: 700 }} />
+        <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={4} dot={{ r: 7, fill: '#fff', stroke: '#3b82f6', strokeWidth: 3, filter: 'drop-shadow(0 2px 8px #3b82f633)' }} activeDot={{ r: 10, fill: '#3b82f6', stroke: '#fff', strokeWidth: 3 }} fill="url(#colorLine)" />
+        {/* Area for subtle gradient fill under the line */}
+        <area type="monotone" dataKey="total" stroke={false} fill="url(#colorLine)" />
       </LineChart>
     </ResponsiveContainer>
   );
