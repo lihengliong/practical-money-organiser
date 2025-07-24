@@ -88,6 +88,8 @@ const Activities = () => {
     ? members
     : newExpense.participants;
 
+  const [nudgeLoading, setNudgeLoading] = useState(false);
+
 
   useEffect(() => {
     console.log('=== Activities Debug ===');
@@ -250,10 +252,10 @@ const Activities = () => {
         category:     newExpense.category || 'Other',
       });
 
-      // Notify payer (creator)
+      // Notify payer (the person who paid)
       await addDoc(collection(db, 'notifications'), {
         type: 'expense_created',
-        user: user.email,
+        user: newExpense.paidBy,
         groupName: group.name,
         expenseDescription: newExpense.description,
         addedBy: user.email,
@@ -263,8 +265,8 @@ const Activities = () => {
 
       // Notify each user who owes money (not the payer)
       await Promise.all(
-        splits.filter(split => split.member !== user.email).map(split => {
-          const payerName = memberDisplay(user.email, false);
+        splits.filter(split => split.member !== newExpense.paidBy).map(split => {
+          const payerName = memberDisplay(newExpense.paidBy, false);
           return addDoc(collection(db, 'notifications'), {
             type: 'expense_request',
             user: split.member,
@@ -386,12 +388,12 @@ const Activities = () => {
         }
         return amount;
       };
-      // Only add to payer's balance if there are splits and more than one participant
+      // Only credit payer if this is not a true solo expense (payer is the only participant)
       if (
         expense.paidBy &&
         Object.prototype.hasOwnProperty.call(balances, expense.paidBy) &&
         expense.splits &&
-        expense.splits.length > 1
+        !(expense.splits.length === 1 && expense.splits[0].member === expense.paidBy)
       ) {
         balances[expense.paidBy] += convert(expense.amount);
       }
@@ -413,6 +415,36 @@ const Activities = () => {
       }
     });
     return balances;
+  };
+
+  const handleNudgeAll = async () => {
+    setNudgeLoading(true);
+    try {
+      const balances = calculateBalances();
+      const nudgePromises = Object.entries(balances)
+        .filter(([, balance]) => balance < -0.01)
+        .map(([member, balance]) => {
+          // Find the creditor (the person they owe the most to)
+          const creditors = Object.entries(balances)
+            .filter(([, bal]) => bal > 0)
+            .sort(([, a], [, b]) => b - a);
+          if (creditors.length === 0) return null;
+          const [creditor] = creditors[0];
+          return addDoc(collection(db, 'notifications'), {
+            type: 'nudge',
+            user: member,
+            groupName: group.name,
+            createdAt: new Date(),
+            message: `Please settle up with ${memberDisplay(creditor, false)}! You currently owe him $${Math.abs(balance).toFixed(2)} in ${group.name}`
+          });
+        });
+      await Promise.all(nudgePromises.filter(Boolean));
+      alert('Nudge sent to all users who owe money!');
+    } catch (err) {
+      alert('Failed to send nudge.');
+    } finally {
+      setNudgeLoading(false);
+    }
   };
 
   // Delete expense handler
@@ -499,13 +531,22 @@ const Activities = () => {
               : group.members.join(', ')
           }</p>
           {user && (
-            <button
-              className="delete-group-btn"
-              style={{ marginTop: 10, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '8px 20px', cursor: 'pointer', fontWeight: 600 }}
-              onClick={deleteGroup}
-            >
-              Delete Group
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10 }}>
+              <button
+                onClick={() => navigate('/group-analytics', { state: { group } })}
+                className="view-analytics-btn"
+                style={{ background: 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px #b7e4c7aa' }}
+              >
+                View Analytics
+              </button>
+              <button
+                className="delete-group-btn"
+                style={{ marginBottom: 0, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '8px 20px', cursor: 'pointer', fontWeight: 600 }}
+                onClick={deleteGroup}
+              >
+                Delete Group
+              </button>
+            </div>
           )}
         </div>
         <button onClick={() => navigate('/groups')} className="back-button" style={{ alignSelf: 'flex-start', marginTop: 0 }}>
@@ -751,8 +792,13 @@ const Activities = () => {
             </div>
 
             {/* Quick Settle Up */}
-            <div className="settle-up-section">
-              <h3>Quick Settle Up</h3>
+            <div className="settle-up-section settle-up-modern">
+              <div className="settle-up-header-row">
+                <h3>Quick Settle Up</h3>
+                <button className="nudge-btn" onClick={handleNudgeAll} disabled={nudgeLoading}>
+                  {nudgeLoading ? 'Nudging...' : 'Nudge All'}
+                </button>
+              </div>
               {Object.entries(balances).filter(([, balance]) => balance < 0).length === 0 ? (
                 <div className="all-settled">
                   All settled up! No one owes money.
@@ -768,7 +814,7 @@ const Activities = () => {
                     const [creditor] = creditors[0];
                     const amountOwed = Math.abs(balance);
                     return (
-                      <div key={member} className="settle-up-item">
+                      <div key={member} className="settle-up-item modern-settle-up-item">
                         <span>
                           <strong>{memberDisplay(member, false)}</strong> owes ${amountOwed.toFixed(2)} to <strong>{memberDisplay(creditor, false)}</strong>
                         </span>
@@ -831,16 +877,28 @@ const Activities = () => {
                             (≈ {convertedAmount.toFixed(2)} {base})
                           </span>
                         </div>
-                        {/* Delete button, only for the payer */}
-                        {user && expense.paidBy === user.email && (
-                          <button
-                            className="delete-expense-btn"
-                            style={{ color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer', minWidth: 70 }}
-                            onClick={() => deleteExpense(expense.id)}
-                          >
-                            Delete
-                          </button>
-                        )}
+                        {/* Delete button, only for the payer and if not settled by payment */}
+                        {user && expense.paidBy === user.email && (() => {
+                          // Hide delete if any payment exists between payer and any debtor for the same amount or greater
+                          const isSettled = payments.some(payment => {
+                            // Payment from debtor to payer for this amount or more
+                            return expense.splits && expense.splits.some(split =>
+                              payment.fromUser === split.member &&
+                              payment.toUser === expense.paidBy &&
+                              Math.abs(payment.amount - split.amountOwed) < 0.01 // allow for floating point
+                            );
+                          });
+                          if (isSettled) return null;
+                          return (
+                            <button
+                              className="delete-expense-btn"
+                              style={{ color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer', minWidth: 70 }}
+                              onClick={() => deleteExpense(expense.id)}
+                            >
+                              Delete
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

@@ -62,40 +62,51 @@
 
 /* Add Expense Form */
 .add-expense-form {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: linear-gradient(120deg, #f8fafc 80%, #e6f4ea 100%);
+  border: 1.5px solid #e0e0e0;
+  border-radius: 18px;
+  padding: 22px 24px 18px 24px; /* reduced from 38px 36px 32px 36px */
+  margin-bottom: 28px; /* slightly reduced */
+  box-shadow: 0 6px 32px rgba(60, 120, 80, 0.10);
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* reduced from 18px */
 }
 .add-expense-form h2 {
-  margin: 0 0 20px 0;
-  color: #333;
+  margin: 0 0 12px 0; /* reduced bottom margin */
+  color: #222;
+  font-size: 1.5em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 /* Expense Form Grid */
 .expense-form-grid {
   display: grid;
-  grid-template-columns: 2fr 0.8fr 0.8fr 0.8fr auto; /* desc, amount, who paid, who's involved, button */
-  gap: 15px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 10px; /* reduced from 16px */
   align-items: end;
+  margin-bottom: 6px; /* reduced */
 }
 
 /* Form Inputs (text, number, select) */
-.form-input {
+.form-input, .form-input input, .form-input select {
   padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 1rem;
+  border: 1.5px solid #b7e4c7;
+  border-radius: 8px;
+  font-size: 1.05em;
   width: 100%;
+  background: #fff;
+  transition: border 0.18s, box-shadow 0.18s;
+  box-shadow: 0 1px 4px #b7e4c733;
 }
-.form-input:focus {
+.form-input:focus, .form-input input:focus, .form-input select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #43e97b;
+  box-shadow: 0 2px 8px #b7e4c7aa;
 }
 
 /* React-Select override to match other inputs */
@@ -143,20 +154,23 @@
 
 /* Add Expense Button */
 .add-expense-btn {
-  background: #28a745;
-  color: white;
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  color: #fff;
   border: none;
-  padding: 12px 24px;
-  border-radius: 5px;
+  border-radius: 10px;
+  padding: 10px 28px; /* reduced from 14px 36px */
+  font-size: 1.08em; /* slightly reduced */
+  font-weight: 700;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  grid-column: 5;       /* place in fifth column */
-  justify-self: end;    /* align to right */
-  margin-top: 24px;     /* add space above the button */
+  box-shadow: 0 2px 8px #b7e4c7aa;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  margin-top: 6px; /* reduced */
+  align-self: flex-end;
 }
 .add-expense-btn:hover {
-  background: #218838;
+  background: linear-gradient(90deg, #38f9d7 0%, #43e97b 100%);
+  box-shadow: 0 6px 18px #b7e4c7aa;
+  transform: translateY(-2px) scale(1.04);
 }
 
 /* Welcome Screen */
@@ -226,32 +240,68 @@
   align-items: center;
 }
 .settle-up-btn {
-  background: #007bff;
-  color: white;
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  color: #fff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.98em;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 2px 8px #b7e4c7aa;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  margin-left: 18px;
 }
-.settle-up-btn:hover { background: #0056b3; }
+.settle-up-btn:hover {
+  background: linear-gradient(90deg, #38f9d7 0%, #43e97b 100%);
+  box-shadow: 0 6px 18px #b7e4c7aa;
+  transform: translateY(-2px) scale(1.04);
+}
 
 /* Expenses Section */
-.expenses-section h2 { margin-bottom: 20px; color: #333; }
+.expenses-section h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
 .expenses-list {
   max-height: 500px;
   overflow-y: auto;
 }
 .expense-item {
-  margin: 0 0 15px 0;
-  padding: 20px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  margin: 0 0 18px 0;
+  padding: 22px 28px 18px 28px;
+  background: linear-gradient(120deg, #f8fafc 80%, #e6f4ea 100%);
+  border: 1.5px solid #e0e0e0;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(60, 120, 80, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .expense-content {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+.delete-expense-btn, .delete-group-btn {
+  color: #fff;
+  background: linear-gradient(90deg, #ff5858 0%, #f09819 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 1.05em;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 70px;
+  box-shadow: 0 2px 8px #ffb19955;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+}
+.delete-expense-btn:hover, .delete-group-btn:hover {
+  background: linear-gradient(90deg, #f09819 0%, #ff5858 100%);
+  box-shadow: 0 6px 18px #ffb19955;
+  transform: translateY(-2px) scale(1.04);
 }
 .expense-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
 .expense-payer { color: #666; font-size: 0.9rem; }
@@ -390,8 +440,11 @@
 
 /* Split Table Styles */
 .split-table-container {
-  margin: 20px 0 10px 0;
-  overflow-x: auto;
+  margin-top: 10px; /* reduced from 18px */
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px #b7e4c733;
+  padding: 10px 8px 4px 8px; /* reduced */
 }
 .split-table {
   width: 100%;
@@ -400,14 +453,14 @@
   margin-bottom: 10px;
 }
 .split-table th, .split-table td {
-  padding: 10px 8px;
-  text-align: center;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 10px 12px;
+  font-size: 1.05em;
 }
 .split-table th {
-  background: #f1f3f6;
-  color: #333;
-  font-weight: 600;
+  background: #e6f4ea;
+  color: #388e3c;
+  font-weight: 700;
+  border-radius: 8px 8px 0 0;
 }
 .split-table tr:last-child td {
   border-bottom: none;
@@ -428,40 +481,39 @@
 .split-error-row {
   background: #fff0f0 !important;
 }
-.split-summary-row {
-  background: #f6f8fa;
-  font-weight: bold;
+.split-summary-row td {
+  font-weight: 700;
+  color: #222;
+  background: #f8fafc;
+  border-radius: 0 0 8px 8px;
 }
 
 /* Split Type Selector Buttons */
 .split-type-selector {
   display: flex;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 .split-type-selector button {
-  background: #f1f3f6;
+  background: #f1f1f1;
   color: #333;
-  border: 1.5px solid #d1d5db;
+  border: none;
   border-radius: 22px;
-  padding: 8px 22px;
-  font-size: 1rem;
-  font-weight: 500;
+  padding: 10px 26px;
+  font-size: 1.08em;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.18s, color 0.18s, border 0.18s;
-  outline: none;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-}
-.split-type-selector button:hover {
-  background: #e2e8f0;
-  border-color: #b6c2d1;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  box-shadow: 0 1px 4px #b7e4c7aa;
 }
 .split-type-selector button.active {
-  background: #007bff;
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
   color: #fff;
-  border-color: #007bff;
-  box-shadow: 0 2px 8px rgba(0,123,255,0.08);
-  font-weight: 600;
+  box-shadow: 0 4px 16px #b7e4c7aa;
+}
+.split-type-selector button:hover:not(.active) {
+  background: #e0e0e0;
+  color: #222;
 }
 
 /* Ledger Page Styles */
@@ -614,4 +666,52 @@
   box-shadow: 0 2px 8px #b7e4c7aa;
   border: 2.5px solid #fff;
   z-index: 3;
+}
+
+.settle-up-modern {
+  background: linear-gradient(120deg, #f8fafc 80%, #e6f4ea 100%);
+  border: 1.5px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 28px 24px 18px 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 12px rgba(60, 120, 80, 0.06);
+}
+.settle-up-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.nudge-btn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 1.08em;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 4px #b7e4c7aa;
+  transition: background 0.18s, box-shadow 0.18s;
+}
+.nudge-btn:disabled {
+  background: #b7e4c7;
+  color: #fff;
+  cursor: not-allowed;
+}
+.nudge-btn:hover:not(:disabled) {
+  background: #388e3c;
+  box-shadow: 0 4px 16px #b7e4c7aa;
+}
+.modern-settle-up-item {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  margin: 12px 0;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 6px rgba(60, 120, 80, 0.04);
+  font-size: 1.08em;
 }

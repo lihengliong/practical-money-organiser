@@ -3,9 +3,9 @@ import { Auth } from './components/auth'
 import Friends from './pages/Friends'
 import Groups from './pages/Groups'
 import Activities from './pages/Activities'
-import Ledger from './pages/Ledger'
-import Analytics from './pages/Analytics'
+import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile';
+import GroupAnalytics from './pages/GroupAnalytics';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Layout } from './layout'
 
@@ -18,9 +18,9 @@ function App() {
           <Route path="/friends" element={<Friends />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/activities/:groupId" element={<Activities />} />
-          <Route path="/ledger" element={<Ledger />} />
-          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/group-analytics" element={<GroupAnalytics />} />
         </Route>
         <Route path="*" element={<div>404: Page Not Found</div>} />
       </Routes>

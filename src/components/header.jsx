@@ -68,10 +68,9 @@ const Header = () => {
   return (
     <header className="navbar">
       <nav className="nav-links">
+        <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''}>Dashboard</NavLink>
         <NavLink to="/friends" className={({ isActive }) => isActive ? 'active' : ''}>Friends</NavLink>
         <NavLink to="/groups" className={({ isActive }) => isActive ? 'active' : ''}>Groups</NavLink>
-        <NavLink to="/ledger" className={({ isActive }) => isActive ? 'active' : ''}>Ledger</NavLink>
-        <NavLink to="/analytics" className={({ isActive }) => isActive ? 'active' : ''}>Analytics</NavLink>
         {user && (
           <div className="user-section">
             <span className="user-email" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/profile')}>

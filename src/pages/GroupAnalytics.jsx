@@ -10,11 +10,11 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import './stylesheets/analytics.css';
 import CurrencySelector from '../components/CurrencySelector';
 import { fetchExchangeRates } from '../utils/currency';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const pieColors = ["#3b82f6", "#10b981", "#f59e42", "#a78bfa", "#f43f5e", "#6366f1", "#fbbf24", "#ef4444"];
 
 function ExpensesLineChart({ data, baseCurrency }) {
-  // Custom tick formatter for x-axis: show month above, year below
   const renderCustomTick = (props) => {
     const { x, y, payload } = props;
     const [month, year] = payload.value.split(' ');
@@ -43,7 +43,6 @@ function ExpensesLineChart({ data, baseCurrency }) {
 }
 
 function CategoryPieChart({ data }) {
-  // Custom tooltip to show category and value
   const renderCustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const { name, value } = payload[0].payload;
@@ -66,7 +65,6 @@ function CategoryPieChart({ data }) {
           cx="50%"
           cy="50%"
           outerRadius={80}
-          // No label prop, so no text over the chart
         >
           {data.map((entry, idx) => (
             <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} />
@@ -93,14 +91,38 @@ function ContributionsBarChart({ data }) {
   );
 }
 
-// Context for Pie Chart Mode
 const PieModeContext = createContext();
-
 export function usePieMode() {
   return useContext(PieModeContext);
 }
 
-export default function Analytics() {
+// GroupHeader component for group name and members
+function GroupHeader({ group }) {
+  // Helper for member initials
+  const getInitials = (nameOrEmail) => {
+    if (!nameOrEmail) return '';
+    const parts = nameOrEmail.split(/[@.\s]/).filter(Boolean);
+    return parts.length === 1 ? parts[0][0].toUpperCase() : (parts[0][0] + parts[1][0]).toUpperCase();
+  };
+  const members = group?.memberProfiles || (group?.members ? group.members.map(email => ({ email, displayName: email })) : []);
+  return (
+    <div style={{ maxWidth: 1200, margin: '0 auto', marginBottom: 18, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div style={{ fontSize: 48, fontWeight: 900, color: '#2563eb', marginBottom: 8, letterSpacing: '-1.5px' }}>{group?.name || 'Group'}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        {members.map((m, idx) => (
+          <span key={m.email || m} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#e6f4ea', borderRadius: 16, padding: '3px 12px', fontSize: 16, fontWeight: 500, color: '#388e3c', marginRight: 4 }}>
+            <span style={{ background: '#fff', color: '#388e3c', borderRadius: '50%', width: 26, height: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, marginRight: 4, boxShadow: '0 1px 4px #b7e4c7aa' }}>{getInitials(m.displayName || m.email || m)}</span>
+            {m.displayName || m.email || m}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function GroupAnalytics() {
+  const location = useLocation();
+  const group = location.state?.group;
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(true);
   const [lineData, setLineData] = useState([]);
@@ -108,11 +130,9 @@ export default function Analytics() {
   const [barData, setBarData] = useState([]);
   const [baseCurrency, setBaseCurrency] = useState('SGD');
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
-  // Get current month name for display
   const now = new Date();
-  const monthName = now.toLocaleString('default', { month: 'long' });
-  const [pieMode, setPieMode] = useState('month'); // 'month' or 'all'
-
+  const [pieMode, setPieMode] = useState('month');
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchRates = async () => {
       try {
@@ -124,29 +144,14 @@ export default function Analytics() {
     };
     fetchRates();
   }, [baseCurrency]);
-
   useEffect(() => {
-    if (!user) return;
+    if (!user || !group) return;
     setLoading(true);
     (async () => {
-      // 1. Fetch all groups the user is in
-      const groupsSnapshot = await getDocs(query(collection(db, 'groups'), where('members', 'array-contains', user.email)));
-      const groups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (!groups.length) {
-        setLineData([]);
-        setAllExpenses([]);
-        setBarData([]);
-        setLoading(false);
-        return;
-      }
-      // 2. Fetch all expenses for those groups
-      let allExpensesArr = [];
-      for (const group of groups) {
-        const expensesSnapshot = await getDocs(query(collection(db, 'expenses'), where('groupId', '==', group.id)));
-        allExpensesArr = allExpensesArr.concat(expensesSnapshot.docs.map(doc => ({ ...doc.data(), group })));
-      }
+      // Only fetch expenses for this group
+      const expensesSnapshot = await getDocs(query(collection(db, 'expenses'), where('groupId', '==', group.id)));
+      const allExpensesArr = expensesSnapshot.docs.map(doc => ({ ...doc.data(), group }));
       // --- Summary Cards ---
-      // Convert all amounts to base currency
       const base = baseCurrency.toUpperCase();
       const rateBase = exchangeRates[base];
       const convert = (amount, currency) => {
@@ -169,6 +174,8 @@ export default function Analytics() {
           return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         })
         .reduce((sum, e) => sum + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0), 0);
+      // Total group expenses (all time)
+      const totalGroupExpenses = allExpensesArr.reduce((sum, e) => sum + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0), 0);
       // My personal contributions
       const myContributions = allExpensesArr
         .filter(e => e.paidBy === user.email)
@@ -205,7 +212,7 @@ export default function Analytics() {
       const monthMap = {};
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const label = d.toLocaleString('default', { month: 'short', year: 'numeric' }); // e.g., 'Jun 2024'
+        const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
         months.push(label);
         monthMap[`${d.getFullYear()}-${d.getMonth()}`] = label;
       }
@@ -227,48 +234,49 @@ export default function Analytics() {
         memberAgg[e.paidBy] = (memberAgg[e.paidBy] || 0) + (typeof e.amount === 'number' ? convert(e.amount, e.currency) : 0);
       });
       setBarData(Object.entries(memberAgg).map(([name, total]) => ({ name, total })));
-      const thisMonth = now.getMonth();
-      const thisYear = now.getFullYear();
-      // My total expenses this month (my share of all splits)
-      const myTotalThisMonth = allExpensesArr
-        .filter(e => {
-          const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.createdAt);
-          return d.getMonth() === thisMonth && d.getFullYear() === thisYear && e.splits && e.splits.some(s => s.member === user.email);
-        })
-        .reduce((sum, e) => {
-          const split = e.splits.find(s => s.member === user.email);
-          return sum + (split ? convert(split.amountOwed, e.currency) : 0);
-        }, 0);
       setSummary({
-        totalThisMonth, // keep for reference if needed
+        totalThisMonth,
+        totalGroupExpenses,
         myContributions,
         net,
-        myTotalThisMonth
+        mostFrequentPayer: mostFrequentPayerCalc
       });
-      setMostFrequentPayer(mostFrequentPayerCalc);
       setAllExpenses(allExpensesArr);
       setLoading(false);
     })();
-  }, [user, baseCurrency, exchangeRates]);
+  }, [user, baseCurrency, exchangeRates, group]);
 
-  // State for summary values
-  const [summary, setSummary] = useState({ totalThisMonth: 0, myContributions: 0, net: 0 });
-  const [mostFrequentPayer, setMostFrequentPayer] = useState('-');
+  const [summary, setSummary] = useState({ totalThisMonth: 0, totalGroupExpenses: 0, myContributions: 0, net: 0, mostFrequentPayer: '-' });
 
   if (!user) return <div className="p-8">Please log in to view analytics.</div>;
   if (loading) return <div className="p-8">Loading analytics...</div>;
 
+  // Helper for member initials
+  const getInitials = (nameOrEmail) => {
+    if (!nameOrEmail) return '';
+    const parts = nameOrEmail.split(/[@.\s]/).filter(Boolean);
+    return parts.length === 1 ? parts[0][0].toUpperCase() : (parts[0][0] + parts[1][0]).toUpperCase();
+  };
+  // Get member list (with fallback)
+  const members = group?.memberProfiles || (group?.members ? group.members.map(email => ({ email, displayName: email })) : []);
+
   return (
     <PieModeContext.Provider value={{ pieMode, setPieMode }}>
       <div className="analytics-container">
-        <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} style={{ marginBottom: 24 }} />
+        {/* Back button and group header, aligned with stats */}
+        <div style={{ maxWidth: 1200, margin: '0 auto', marginBottom: 8 }}>
+          <button onClick={() => navigate(-1)} style={{ background: '#f1f1f1', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 600, cursor: 'pointer', color: '#333', boxShadow: '0 1px 4px #b7e4c7aa', marginBottom: 10 }}>
+            ← Back to Activities
+          </button>
+          <GroupHeader group={group} />
+        </div>
         {/* Centralized Summary Cards Section */}
         <div className="analytics-summary-wrapper">
           <div className="analytics-summary-grid">
-            {/* My Total Expenses This Month Card */}
+            {/* Group Total Expenses Card */}
             <div className="analytics-card analytics-card-blue">
-              <div className="analytics-card-title">Total Expenses Incurred by Me (This Month: {monthName})</div>
-              <div className="analytics-card-value analytics-card-value-blue">${summary.myTotalThisMonth ? summary.myTotalThisMonth.toFixed(2) : '0.00'}</div>
+              <div className="analytics-card-title">Total Expenses Incurred by Group</div>
+              <div className="analytics-card-value analytics-card-value-blue">${summary.totalGroupExpenses ? summary.totalGroupExpenses.toFixed(2) : '0.00'}</div>
             </div>
             {/* My Contributions Card */}
             <div className="analytics-card analytics-card-green">
@@ -285,7 +293,14 @@ export default function Analytics() {
             {/* Most Frequent Payer Card */}
             <div className="analytics-card analytics-card-yellow">
               <div className="analytics-card-title">Most Frequent Payer</div>
-              <div className="analytics-card-value analytics-card-value-yellow">{mostFrequentPayer}</div>
+              <div className="analytics-card-value analytics-card-value-yellow">
+                {(() => {
+                  // Try to find display name for most frequent payer
+                  const members = group?.memberProfiles || (group?.members ? group.members.map(email => ({ email, displayName: email })) : []);
+                  const found = members.find(m => m.email === summary.mostFrequentPayer || m.displayName === summary.mostFrequentPayer);
+                  return found ? (found.displayName || found.email) : summary.mostFrequentPayer;
+                })()}
+              </div>
             </div>
           </div>
         </div>
@@ -305,16 +320,54 @@ export default function Analytics() {
           <ContributionsBarChart data={barData} />
         </div>
       </div>
+      {/* Recent Expenses List */}
+      <div className="analytics-chart-card analytics-chart-card-full" style={{ marginTop: 32 }}>
+        <div className="analytics-chart-title">Recent Expenses</div>
+        {allExpenses.length === 0 ? (
+          <div style={{ color: '#888', fontSize: 17, padding: 24, textAlign: 'center' }}>
+            No expenses yet for this group!
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', color: '#2563eb', fontWeight: 700 }}>
+                <td style={{ padding: '10px 8px' }}>Date</td>
+                <td style={{ padding: '10px 8px' }}>Description</td>
+                <td style={{ padding: '10px 8px' }}>Category</td>
+                <td style={{ padding: '10px 8px' }}>Paid By</td>
+                <td style={{ padding: '10px 8px' }}>Amount</td>
+              </tr>
+            </thead>
+            <tbody>
+              {allExpenses
+                .slice()
+                .sort((a, b) => {
+                  const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                  const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+                  return bDate - aDate;
+                })
+                .map((e, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #e0e0e0', background: idx % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                    <td style={{ padding: '8px 8px' }}>{e.createdAt?.toDate ? e.createdAt.toDate().toLocaleDateString() : ''}</td>
+                    <td style={{ padding: '8px 8px' }}>{e.description}</td>
+                    <td style={{ padding: '8px 8px' }}>{e.category || 'Other'}</td>
+                    <td style={{ padding: '8px 8px' }}>{e.paidBy}</td>
+                    <td style={{ padding: '8px 8px', fontWeight: 600 }}>${e.amount?.toFixed(2)}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
     </PieModeContext.Provider>
   );
 }
 
-// New component for the pie chart section
 function ExpenseBreakdownByCategory({ allExpenses }) {
   const { pieMode, setPieMode } = usePieMode();
   const [pieData, setPieData] = useState([]);
-  const [baseCurrency] = useState('SGD'); // Use parent's baseCurrency if you want to sync
+  const [baseCurrency] = useState('SGD');
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
   useEffect(() => {
     const fetchRates = async () => {
@@ -328,7 +381,6 @@ function ExpenseBreakdownByCategory({ allExpenses }) {
     fetchRates();
   }, [baseCurrency]);
   useEffect(() => {
-    // Filter and aggregate pie data based on pieMode
     const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
@@ -417,4 +469,4 @@ function ExpenseBreakdownByCategory({ allExpenses }) {
       </div>
     </div>
   );
-}
+} 
