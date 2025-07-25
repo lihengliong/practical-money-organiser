@@ -1,7 +1,11 @@
-import { useState } from 'react';
-import { auth } from '../config/firebase';
-import { updatePassword } from 'firebase/auth';
+import { useState, useRef } from 'react';
+import { auth, db } from '../config/firebase';
+import { updatePassword, updateProfile } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import './stylesheets/profile.css';
+
+const DEFAULT_DESC = 'Tell us a little about yourself!';
 
 const Profile = () => {
   const [user] = useAuthState(auth);
@@ -9,6 +13,13 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [changing, setChanging] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [savingName, setSavingName] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.photoURL || '');
+  const [uploading, setUploading] = useState(false);
+  const [desc, setDesc] = useState(user?.desc || DEFAULT_DESC);
+  const fileInputRef = useRef();
 
   const handleChangePassword = async () => {
     setMessage('');
@@ -30,27 +41,119 @@ const Profile = () => {
     }
   };
 
+  const handleSaveProfile = async () => {
+    setSavingName(true);
+    setMessage('');
+    setError('');
+    try {
+      if (!displayName || displayName.length < 2) {
+        setError('Display name must be at least 2 characters.');
+        setSavingName(false);
+        return;
+      }
+      await updateProfile(auth.currentUser, { displayName });
+      await setDoc(doc(db, 'users', user.uid), { displayName, desc }, { merge: true });
+      await auth.currentUser.reload();
+      setMessage('Profile updated!');
+      setEditing(false);
+    } catch (err) {
+      setError('Failed to update profile. ' + (err && err.message ? err.message : ''));
+      console.error('Profile update error:', err);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setMessage('');
+    setError('');
+    try {
+      // For demo: use a local URL. In production, upload to storage and get a URL.
+      const url = URL.createObjectURL(file);
+      setAvatarUrl(url);
+      await updateProfile(auth.currentUser, { photoURL: url });
+      await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
+      setMessage('Profile picture updated!');
+    } catch (err) {
+      setError('Failed to update profile picture.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!user) {
-    return <div style={{ padding: 32 }}>Please log in to view your profile.</div>;
+    return <div className="profile-container"><div className="profile-message">Please log in to view your profile.</div></div>;
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '40px auto', padding: 24, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #eee' }}>
-      <h2>Profile</h2>
-      <div style={{ marginBottom: 16 }}><strong>Email:</strong> {user.email}</div>
-      <div style={{ margin: '24px 0 8px 0', fontWeight: 'bold' }}>Change Password</div>
-      <input
-        type="password"
-        placeholder="New password"
-        value={newPassword}
-        onChange={e => setNewPassword(e.target.value)}
-        style={{ width: '100%', padding: 8, marginBottom: 8, borderRadius: 4, border: '1px solid #ccc' }}
-      />
-      <button onClick={handleChangePassword} disabled={changing} style={{ padding: '8px 16px', borderRadius: 4, border: 'none', background: '#28a745', color: '#fff', cursor: 'pointer' }}>
-        {changing ? 'Changing...' : 'Change Password'}
-      </button>
-      {message && <div style={{ color: 'green', marginTop: 16 }}>{message}</div>}
-      {error && <div style={{ color: 'red', marginTop: 16 }}>{error}</div>}
+    <div className="profile-card-redesign">
+      <div className="profile-avatar-section">
+        <div className="profile-avatar-wrapper">
+          <div className="profile-avatar placeholder">
+            {user.displayName ? user.displayName[0].toUpperCase() : user.email[0].toUpperCase()}
+          </div>
+        </div>
+      </div>
+      <div className="profile-main-info">
+        {editing ? (
+          <input
+            className="profile-input profile-input-name profile-big-name"
+            type="text"
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            disabled={savingName}
+            maxLength={32}
+            style={{ textAlign: 'center' }}
+          />
+        ) : (
+          <div className="profile-big-name">{user.displayName || <span style={{ color: '#888' }}>[No name set]</span>}</div>
+        )}
+        <div className="profile-subtitle">{user.email}</div>
+        {editing ? (
+          <textarea
+            className="profile-desc profile-desc-edit"
+            value={desc}
+            onChange={e => setDesc(e.target.value)}
+            maxLength={120}
+            rows={2}
+            placeholder={DEFAULT_DESC}
+          />
+        ) : (
+          <div className="profile-desc">{desc || DEFAULT_DESC}</div>
+        )}
+      </div>
+      {editing ? (
+        <>
+          <div className="profile-edit-btn-row">
+            <button className="profile-btn save-btn profile-edit-btn" onClick={handleSaveProfile} disabled={savingName}>
+              {savingName ? 'Saving...' : 'Save'}
+            </button>
+            <button className="profile-btn cancel-btn profile-edit-btn" onClick={() => { setEditing(false); setDisplayName(user.displayName || ''); setDesc(user.desc || DEFAULT_DESC); setNewPassword(''); setError(''); setMessage(''); }} disabled={savingName}>
+              Cancel
+            </button>
+          </div>
+          <div className="profile-section-title">Change Password</div>
+          <input
+            type="password"
+            placeholder="New password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            className="profile-input"
+          />
+          <button onClick={handleChangePassword} disabled={changing} className="profile-btn save-btn profile-edit-btn">
+            {changing ? 'Changing...' : 'Change Password'}
+          </button>
+        </>
+      ) : (
+        <button className="profile-btn profile-edit-btn" onClick={() => setEditing(true)}>
+          Edit Profile
+        </button>
+      )}
+      {message && <div className="profile-message success">{message}</div>}
+      {error && <div className="profile-message error">{error}</div>}
     </div>
   );
 };

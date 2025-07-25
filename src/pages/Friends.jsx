@@ -341,45 +341,36 @@ const Friends = () => {
 			)}
 
 			{/* Friends List */}
-			<div className="friends-list-section">
+			<div className="friends-list-outer">
 				<h3 className="friends-list-title">My Friends ({friends.length})</h3>
-				{friends.length === 0 ? (
-					<p className="no-friends-message">
-						No friends yet. Add some friends to start splitting expenses!
-					</p>
-				) : (
-					friends.map(friend => (
-						<div key={friend.id} className="friend-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-							<div className="friend-info">
-								{friend.friendProfile?.profilePicture && (
-									<img 
-										src={friend.friendProfile.profilePicture} 
-										alt="Profile" 
-										className="profile-picture-large"
-									/>
-								)}
-								<div className="friend-details">
-									<div className="friend-name">
-										{friend.friendProfile?.displayName || friend.friendEmail}
-									</div>
-									<div className="friend-email">
-										{friend.friendEmail}
-									</div>
-									<div className="friend-since">
-										Friends since: {friend.acceptedAt?.toDate?.().toLocaleDateString() || 'Recently'}
+				<div className="friends-list-section">
+					{friends.length === 0 ? (
+						<p className="no-friends-message">
+							No friends yet. Add some friends to start splitting expenses!
+						</p>
+					) : (
+						friends.map(friend => (
+							<div key={friend.id} className="friend-card-redesign">
+								<div className="friend-card-avatar-section">
+									<div className="friend-card-avatar placeholder">
+										{friend.friendProfile?.displayName ? friend.friendProfile.displayName[0].toUpperCase() : friend.friendEmail[0].toUpperCase()}
 									</div>
 								</div>
+								<div className="friend-card-main-info">
+									<div className="friend-card-name">{friend.friendProfile?.displayName || friend.friendEmail}</div>
+									<div className="friend-card-email">{friend.friendEmail}</div>
+									<div className="friend-card-since">Friends since: {friend.acceptedAt?.toDate?.().toLocaleDateString() || 'Recently'}</div>
+								</div>
+								<button 
+									onClick={() => removeFriend(friend.id)}
+									className="remove-friend-btn friend-card-remove-btn"
+								>
+									Remove Friend
+								</button>
 							</div>
-							<button 
-								onClick={() => removeFriend(friend.id)}
-								className="remove-friend-btn"
-								style={{ marginLeft: 'auto' }}
-							>
-								Remove Friend
-							</button>
-						</div>
-					))
-				)}
+						))
+					)}
+				</div>
 			</div>
 		</div>
 	);

@@ -260,7 +260,7 @@ const Activities = () => {
         expenseDescription: newExpense.description,
         addedBy: user.email,
         createdAt: new Date(),
-        message: `$${amount} for ${newExpense.description} has been logged into ${group.name}`
+        message: `${(newExpense.currency || 'SGD').toUpperCase()} ${amount} for ${newExpense.description} has been logged into ${group.name}`
       });
 
       // Notify each user who owes money (not the payer)
@@ -274,7 +274,7 @@ const Activities = () => {
             expenseDescription: newExpense.description,
             addedBy: user.email,
             createdAt: new Date(),
-            message: `You owe ${payerName} $${split.amountOwed.toFixed(2)} for ${newExpense.description} in ${group.name}`
+            message: `You owe ${payerName} ${(newExpense.currency || 'SGD').toUpperCase()} ${split.amountOwed.toFixed(2)} for ${newExpense.description} in ${group.name}`
           });
         })
       );
@@ -344,7 +344,7 @@ const Activities = () => {
           groupId: group.id,
           groupName: group.name,
           createdAt: new Date(),
-          message: `${payerName} has paid you $${Number(amount).toFixed(2)} in ${group.name}`
+          message: `${payerName} has paid you ${(group.currency || 'SGD').toUpperCase()} ${Number(amount).toFixed(2)} in ${group.name}`
         })
       ]);
 
@@ -471,6 +471,34 @@ const Activities = () => {
     }
   };
 
+  // Helper to generate minimal transactions for settle up
+  function getMinimalSettleUp(balances) {
+    // Convert balances to array of { member, balance }
+    const entries = Object.entries(balances)
+      .map(([member, balance]) => ({ member, balance: Math.round(balance * 100) / 100 }))
+      .filter(e => Math.abs(e.balance) > 0.01);
+    const debtors = entries.filter(e => e.balance < 0).map(e => ({ ...e }));
+    const creditors = entries.filter(e => e.balance > 0).map(e => ({ ...e }));
+    // Sort debtors (most negative first), creditors (most positive first)
+    debtors.sort((a, b) => a.balance - b.balance);
+    creditors.sort((a, b) => b.balance - a.balance);
+    const transactions = [];
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+      const debtor = debtors[i];
+      const creditor = creditors[j];
+      const amount = Math.min(-debtor.balance, creditor.balance);
+      if (amount > 0.01) {
+        transactions.push({ from: debtor.member, to: creditor.member, amount });
+        debtor.balance += amount;
+        creditor.balance -= amount;
+      }
+      if (Math.abs(debtor.balance) < 0.01) i++;
+      if (creditor.balance < 0.01) j++;
+    }
+    return transactions;
+  }
+
   if (!group) {
     return (
       <div className="no-group-container">
@@ -517,6 +545,9 @@ const Activities = () => {
   const balances = calculateBalances();
   const hasExpenses = expenses.length > 0;
 
+  // Find the earliest payment date in the group
+  const earliestPaymentDate = payments.length > 0 ? new Date(Math.min(...payments.map(p => (p.paymentDate?.toDate ? p.paymentDate.toDate() : new Date(p.paymentDate)).getTime()))) : null;
+
   return (
     <div className="activities-container">
       {/* Base currency selector */}
@@ -535,7 +566,6 @@ const Activities = () => {
               <button
                 onClick={() => navigate('/group-analytics', { state: { group } })}
                 className="view-analytics-btn"
-                style={{ background: 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px #b7e4c7aa' }}
               >
                 View Analytics
               </button>
@@ -799,34 +829,24 @@ const Activities = () => {
                   {nudgeLoading ? 'Nudging...' : 'Nudge All'}
                 </button>
               </div>
-              {Object.entries(balances).filter(([, balance]) => balance < 0).length === 0 ? (
+              {getMinimalSettleUp(balances).length === 0 ? (
                 <div className="all-settled">
                   All settled up! No one owes money.
                 </div>
               ) : (
-                Object.entries(balances)
-                  .filter(([, balance]) => balance < 0)
-                  .map(([member, balance]) => {
-                    const creditors = Object.entries(balances)
-                      .filter(([, bal]) => bal > 0)
-                      .sort(([, a], [, b]) => b - a);
-                    if (creditors.length === 0) return null;
-                    const [creditor] = creditors[0];
-                    const amountOwed = Math.abs(balance);
-                    return (
-                      <div key={member} className="settle-up-item modern-settle-up-item">
-                        <span>
-                          <strong>{memberDisplay(member, false)}</strong> owes ${amountOwed.toFixed(2)} to <strong>{memberDisplay(creditor, false)}</strong>
-                        </span>
-                        <button 
-                          onClick={() => recordPayment(member, creditor, amountOwed)}
-                          className="settle-up-btn"
-                        >
-                          Mark as Paid
-                        </button>
-                      </div>
-                    );
-                  })
+                getMinimalSettleUp(balances).map(({ from, to, amount }) => (
+                  <div key={from + to} className="settle-up-item modern-settle-up-item">
+                    <span>
+                      <strong>{memberDisplay(from, false)}</strong> owes ${amount.toFixed(2)} to <strong>{memberDisplay(to, false)}</strong>
+                    </span>
+                    <button 
+                      onClick={() => recordPayment(from, to, amount)}
+                      className="settle-up-btn"
+                    >
+                      Mark as Paid
+                    </button>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -879,16 +899,9 @@ const Activities = () => {
                         </div>
                         {/* Delete button, only for the payer and if not settled by payment */}
                         {user && expense.paidBy === user.email && (() => {
-                          // Hide delete if any payment exists between payer and any debtor for the same amount or greater
-                          const isSettled = payments.some(payment => {
-                            // Payment from debtor to payer for this amount or more
-                            return expense.splits && expense.splits.some(split =>
-                              payment.fromUser === split.member &&
-                              payment.toUser === expense.paidBy &&
-                              Math.abs(payment.amount - split.amountOwed) < 0.01 // allow for floating point
-                            );
-                          });
-                          if (isSettled) return null;
+                          // Only show delete if there are no payments, or this expense was created after the earliest payment
+                          const expenseCreatedAt = expense.createdAt?.toDate ? expense.createdAt.toDate() : new Date(expense.createdAt);
+                          if (earliestPaymentDate && expenseCreatedAt <= earliestPaymentDate) return null;
                           return (
                             <button
                               className="delete-expense-btn"

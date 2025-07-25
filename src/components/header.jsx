@@ -68,16 +68,22 @@ const Header = () => {
   return (
     <header className="navbar">
       <nav className="nav-links">
-        <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''}>Dashboard</NavLink>
+        <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'active header-hover-animate' : 'header-hover-animate')}>Dashboard</NavLink>
         <NavLink to="/friends" className={({ isActive }) => isActive ? 'active' : ''}>Friends</NavLink>
         <NavLink to="/groups" className={({ isActive }) => isActive ? 'active' : ''}>Groups</NavLink>
         {user && (
           <div className="user-section">
-            <span className="user-email" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/profile')}>
-              {user.email}
-            </span>
+            <div className="header-user-info header-hover-animate" onClick={() => navigate('/profile')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="header-avatar header-avatar-initials">
+                {(user.displayName ? user.displayName[0] : user.email[0]).toUpperCase()}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1 }}>
+                <span className="header-display-name" style={{ fontWeight: 700, fontSize: '1.13em', color: '#fff', marginBottom: 2 }}>{user.displayName || user.email.split('@')[0]}</span>
+                <span className="header-email" style={{ fontSize: '0.98em', color: '#e0e7ff', opacity: 0.85 }}>{user.email}</span>
+              </div>
+            </div>
             {/* Bell icon button for notifications */}
-            <button className="notification-bell-btn" onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', marginLeft: '10px', cursor: 'pointer', position: 'relative' }}>
+            <button className="notification-bell-btn header-hover-animate" onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', marginLeft: '10px', cursor: 'pointer', position: 'relative' }}>
               <MdNotificationsNone size={24} />
               {hasUnread && <span className="notification-dot" />}
             </button>

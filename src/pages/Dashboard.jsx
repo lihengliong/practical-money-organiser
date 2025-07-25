@@ -249,7 +249,7 @@ const Dashboard = () => {
       </div>
       <div className="dashboard-charts-row">
         <div className="dashboard-analytics-chart-card dashboard-analytics-linechart">
-          <div className="dashboard-analytics-chart-title">Group Expenses (Last 6 Months)</div>
+          <div className="dashboard-analytics-chart-title">My Expenses (Last 6 Months)</div>
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={lineData} margin={{ top: 10, right: 30, left: 0, bottom: 36 }}>
               <defs>
