@@ -1,5 +1,5 @@
 export async function fetchExchangeRates(base = 'SGD') {
-  const API_KEY = 'd5e93432a3c3a06d6114a1e0'; //(lihengliong@gmail.com)
+  const API_KEY = '1734f66aed7839eee5e0d51e'; //(levileox@gmail.com - create new account & key when api usage runs out)
   const url = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${base}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch exchange rates');
