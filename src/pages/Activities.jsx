@@ -4,7 +4,7 @@ import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from 'fireb
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Select from 'react-select';
-import './stylesheets/activities.css';
+import './stylesheets/group-expenses.css';
 import { fetchExchangeRates } from '../utils/currency';
 import CurrencySelector from '../components/CurrencySelector';
 
@@ -43,8 +43,8 @@ const categoryOptions = [
   'Other',
 ];
 
-const Activities = () => {
-  // Local base currency state for this group/activities page
+const GroupExpenses = () => {
+  // Local base currency state for this group/expenses page
   const [baseCurrency, setBaseCurrency] = useState('SGD');
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
 
@@ -92,7 +92,7 @@ const Activities = () => {
 
 
   useEffect(() => {
-    console.log('=== Activities Debug ===');
+    console.log('=== Group Expenses Debug ===');
     console.log('Group from state:', group);
     console.log('User:', user?.email);
 
@@ -561,11 +561,11 @@ const Activities = () => {
   const earliestPaymentDate = payments.length > 0 ? new Date(Math.min(...payments.map(p => (p.paymentDate?.toDate ? p.paymentDate.toDate() : new Date(p.paymentDate)).getTime()))) : null;
 
   return (
-    <div className="activities-container">
+    <div className="group-expenses-container">
       {/* Base currency selector */}
       <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} />
       {/* Header */}
-      <div className="activities-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="group-expenses-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1>{group.name}</h1>
           <p>{group.memberProfiles?.length || group.members.length} members: {
@@ -1000,4 +1000,4 @@ const Activities = () => {
   );
 };
 
-export default Activities;
+export default GroupExpenses;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { db, auth } from '../config/firebase';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import './stylesheets/groups.css';
@@ -8,16 +8,10 @@ import { fetchExchangeRates } from '../utils/currency';
 import CurrencySelector from '../components/CurrencySelector';
 
 function Groups() {
-    const [groupName, setGroupName] = useState('');
     const [groups, setGroups] = useState([]);
-    const [friends, setFriends] = useState([]);
-    const [selectedMembers, setSelectedMembers] = useState([]);
-    const [emailInput, setEmailInput] = useState('');
     const [user] = useAuthState(auth);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [addingEmail, setAddingEmail] = useState(false);
-    const navigate = useNavigate();
     const [groupBalances, setGroupBalances] = useState({});
     // Add state for base currency and exchange rates
     const [baseCurrency, setBaseCurrency] = useState('SGD'); // Default to SGD
@@ -27,7 +21,6 @@ function Groups() {
 
     useEffect(() => {
       if (user) {
-        fetchFriends();
         fetchGroups();
       }
     }, [user]);
@@ -63,50 +56,6 @@ function Groups() {
       }
     };
 
-    const fetchFriends = async () => {
-      try {
-        const friendsQuery1 = query(
-          collection(db, 'friendships'),
-          where('user1', '==', user.email),
-          where('status', '==', 'accepted')
-        );
-        const friendsQuery2 = query(
-          collection(db, 'friendships'),
-          where('user2', '==', user.email),
-          where('status', '==', 'accepted')
-        );
-
-        const [friends1, friends2] = await Promise.all([
-          getDocs(friendsQuery1),
-          getDocs(friendsQuery2)
-        ]);
-
-        const allFriends = [];
-        friends1.docs.forEach(doc => {
-          allFriends.push({ id: doc.id, friendEmail: doc.data().user2, ...doc.data() });
-        });
-        friends2.docs.forEach(doc => {
-          allFriends.push({ id: doc.id, friendEmail: doc.data().user1, ...doc.data() });
-        });
-
-        // Fetch profile information for all friends
-        const friendsWithProfiles = await Promise.all(
-          allFriends.map(async (friend) => {
-            const profile = await fetchUserProfile(friend.friendEmail);
-            return {
-              ...friend,
-              friendProfile: profile
-            };
-          })
-        );
-
-        setFriends(friendsWithProfiles);
-      } catch (error) {
-        console.error('Error fetching friends:', error);
-        setError('Error loading friends');
-      }
-    };
-    
     const fetchGroups = async () => {
       try {
         setLoading(true);
@@ -235,123 +184,13 @@ function Groups() {
       fetchAllGroupBalances();
     }, [user, groups, exchangeRates, baseCurrency]);
 
-    const toggleFriendSelection = (friendEmail) => {
-      setSelectedMembers(prev => {
-        if (prev.includes(friendEmail)) {
-          return prev.filter(email => email !== friendEmail);
-        } else {
-          return [...prev, friendEmail];
-        }
-      });
-    };
-
-    const addEmailMember = async () => {
-      if (!emailInput.trim()) {
-        setError('Please enter an email address');
-        return;
-      }
-
-      if (emailInput === user.email) {
-        setError('You cannot add yourself');
-        setEmailInput('');
-        return;
-      }
-
-      if (selectedMembers.includes(emailInput)) {
-        setError('This user is already added to the group');
-        setEmailInput('');
-        return;
-      }
-
-      try {
-        setAddingEmail(true);
-        setError('');
-
-        const userQuery = query(
-          collection(db, 'users'),
-          where('email', '==', emailInput.trim())
-        );
-        const userSnapshot = await getDocs(userQuery);
-        
-        if (userSnapshot.empty) {
-          setError('User with this email does not exist in the app. They need to create an account first.');
-          return;
-        }
-
-        setSelectedMembers(prev => [...prev, emailInput.trim()]);
-        setEmailInput('');
-        setError('');
-
-      } catch (error) {
-        console.error('Error validating user:', error);
-        setError('Error validating user. Please try again.');
-      } finally {
-        setAddingEmail(false);
-      }
-    };
-
-    const handleEmailKeyPress = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addEmailMember();
-      }
-    };
-
-    const removeMember = (email) => {
-      setSelectedMembers(prev => prev.filter(member => member !== email));
-    };
-  
-    const createGroup = async () => {
-      if (!groupName) {
-        setError('Please enter a group name');
-        return;
-      }
-
-      if (selectedMembers.length === 0) {
-        setError('Please add at least one member to the group');
-        return;
-      }
-
-      try {
-        const allMembers = [user.email, ...selectedMembers];
-
-        await addDoc(collection(db, 'groups'), {
-          name: groupName,
-          members: allMembers,
-          createdBy: user.email,
-          createdAt: new Date(),
-        });
-
-        // Push notifications to all added members except the creator
-        await Promise.all(selectedMembers.map(memberEmail =>
-          addDoc(collection(db, 'notifications'), {
-            type: 'group_add',
-            user: memberEmail,
-            groupName: groupName,
-            createdBy: user.email,
-            createdAt: new Date(),
-            message: `You were added to the group '${groupName}' by ${user.email}`
-          })
-        ));
-
-        setGroupName('');
-        setSelectedMembers([]);
-        setEmailInput('');
-        setError('');
-        
-        fetchGroups();
-        alert('Group created successfully!');
-      } catch (error) {
-        console.error('Error creating group:', error);
-        setError('Error creating group. Please try again.');
-      }
-    };
+    const navigate = useNavigate();
 
     // Navigate to expenses page for a specific group
     const openGroupExpenses = (group) => {
       console.log('Navigating to group:', group.id);
       console.log('Full group object:', group);
-      navigate(`/activities/${group.id}`, { state: { group } });
+      navigate(`/group-expenses/${group.id}`, { state: { group } });
     };
 
     // (deleteGroup handler removed as it was unused)
@@ -372,10 +211,6 @@ function Groups() {
       );
     }
 
-    const isEmailFriend = (email) => {
-      return friends.some(friend => friend.friendEmail === email);
-    };
-    
     return (
       <div className="groups-container">
         {loadingRates && (
@@ -383,121 +218,26 @@ function Groups() {
         )}
         {/* Base currency selector */}
         <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} style={{ marginBottom: 20 }} />
-          {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
-        <h2>Create a Group</h2>
+        {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
         
-        {error && <div className="error-message">{error}</div>}
-        
-        <div className="create-group-form">
-          <input
-            type="text"
-            placeholder="Group name"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            className="group-name-input"
-          />
-          
-          {friends.length > 0 && (
-            <div className="friends-section">
-              <h3>Quick Add: Select from Your Friends</h3>
-              <p className="friends-description">
-                Check boxes to quickly add friends without typing their emails
-              </p>
-              <div className="friends-list">
-                {friends.map(friend => (
-                  <label key={friend.id} className="friend-item">
-                    <input
-                      type="checkbox"
-                      checked={selectedMembers.includes(friend.friendEmail)}
-                      onChange={() => toggleFriendSelection(friend.friendEmail)}
-                      className="friend-checkbox"
-                    />
-                    <div className="friend-display">
-                      <div className="friend-info">
-                        <span className="friend-name">
-                          {friend.friendProfile?.displayName || friend.friendEmail.split('@')[0]}
-                        </span>
-                        <span className="friend-email">
-                          {friend.friendEmail}
-                        </span>
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="email-section">
-            <h3>Add Members by Email</h3>
-            <p className="email-description">
-              Add a non-friend by typing their email
-            </p>
-            <div className="email-input-container">
-              <input
-                type="email"
-                placeholder="Enter email address and press Enter"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                onKeyPress={handleEmailKeyPress}
-                className="email-input"
-                disabled={addingEmail}
-              />
-              <button 
-                onClick={addEmailMember}
-                disabled={addingEmail || !emailInput.trim()}
-                className="add-email-btn"
-              >
-                {addingEmail ? 'Checking...' : 'Add'}
-              </button>
-            </div>
-            <small className="email-help-text">
-              Press Enter or click Add. Only registered users can be added.
-            </small>
-          </div>
-
-          {selectedMembers.length > 0 && (
-            <div className="members-preview">
-              <strong>Group Members ({selectedMembers.length + 1}):</strong>
-              <div className="members-list">
-                <span className="member-tag current-user">
-                  {user.email} (You)
-                </span>
-                {selectedMembers.map(email => (
-                  <span 
-                    key={email}
-                    className={`member-tag ${isEmailFriend(email) ? 'friend' : 'other'}`}
-                    onClick={() => removeMember(email)}
-                    title="Click to remove"
-                  >
-                    {email} ✕
-                  </span>
-                ))}
-              </div>
-              <div className="members-legend">
-                <span className="legend-dot friend-dot"></span> Friend
-                <span className="legend-dot other-dot"></span> Other
-                <span className="legend-dot current-user-dot"></span> You
-                <span className="members-help-text" style={{ marginLeft: 10 }}>
-                  Click a member to remove
-                </span>
-              </div>
-            </div>
-          )}
-          
-          <button 
-            onClick={createGroup}
-            className={`create-group-btn${groupName && selectedMembers.length > 0 ? ' ready' : ''}`}
-            disabled={loading}
+        {/* Create Group Button - positioned above the heading */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <button
+            className="create-group-btn"
+            onClick={() => navigate('/groups/create')}
+            style={{ fontWeight: 600, fontSize: 16, padding: '10px 24px', borderRadius: 8 }}
           >
-            Create Group
+            + Create Group
           </button>
         </div>
-
+        
+        {/* Your Groups heading */}
+        <h2 style={{ marginBottom: 24 }}>Your Groups</h2>
+        
+        {error && <div className="error-message">{error}</div>}
         <div className="groups-list-section">
-          <h2>Your Groups</h2>
           {groups.length === 0 ? (
-            <p className="no-groups-message">No groups yet. Create your first group above!</p>
+            <p className="no-groups-message">No groups yet. Click "+ Create Group" to start!</p>
           ) : (
             <div className="groups-grid">
               {groups.map(group => (

@@ -274,7 +274,7 @@ export default function GroupAnalytics() {
         {/* Back button and group header, aligned with stats */}
         <div style={{ maxWidth: 1200, margin: '0 auto', marginBottom: 8 }}>
           <button onClick={() => navigate(-1)} style={{ background: '#f1f1f1', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 600, cursor: 'pointer', color: '#333', boxShadow: '0 1px 4px #b7e4c7aa', marginBottom: 10 }}>
-            ← Back to Activities
+            ← Back to Group Expenses
           </button>
           <GroupHeader group={group} />
         </div>

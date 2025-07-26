@@ -2,7 +2,8 @@ import './App.css'
 import { Auth } from './components/auth'
 import Friends from './pages/Friends'
 import Groups from './pages/Groups'
-import Activities from './pages/Activities'
+import GroupExpenses from './pages/Activities'
+import GroupCreate from './pages/GroupCreate'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile';
 import GroupAnalytics from './pages/GroupAnalytics';
@@ -17,7 +18,8 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/friends" element={<Friends />} />
           <Route path="/groups" element={<Groups />} />
-          <Route path="/activities/:groupId" element={<Activities />} />
+          <Route path="/groups/create" element={<GroupCreate />} />
+          <Route path="/group-expenses/:groupId" element={<GroupExpenses />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/group-analytics" element={<GroupAnalytics />} />
