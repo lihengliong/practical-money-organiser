@@ -204,7 +204,7 @@ const Activities = () => {
   
     let splits = [];
         if (splitType === 'equal') {
-          // Improved equal split: distribute rounding error
+          // Improved equal split: first person takes the burden of remainder division
           const n = involved.length;
           if (n === 1 && involved[0] === newExpense.paidBy) {
             splits = [];
@@ -213,10 +213,12 @@ const Activities = () => {
             let splitVals = Array(n).fill(baseShare);
             let totalAssigned = baseShare * n;
             let remainder = Math.round((amount - totalAssigned) * 100); // in cents
-            for (let i = 0; i < remainder; i++) {
-              splitVals[i] += 0.01;
+            
+            // Give the remainder to the first person in the involved list
+            if (remainder > 0) {
+              splitVals[0] = standardizeAmount(splitVals[0] + (remainder / 100));
             }
-            splitVals = splitVals.map(v => Number(v.toFixed(2)));
+            
             splits = involved.map((m, i) => ({
               member: m,
               amountOwed: splitVals[i]
@@ -727,7 +729,23 @@ const Activities = () => {
                     calculated = exact;
                     error = exact < 0 || exact > amount;
                   } else if (splitType === 'equal') {
-                    calculated = amount / involved.length || 0;
+                    // Calculate the actual split using the same logic as addExpense
+                    const n = involved.length;
+                    if (n === 1 && involved[0] === newExpense.paidBy) {
+                      calculated = 0;
+                    } else {
+                      const baseShare = Math.floor((amount / n) * 100) / 100;
+                      const memberIndex = involved.indexOf(m);
+                      
+                      if (memberIndex === 0) {
+                        // This is the first person - they get the remainder
+                        const totalAssigned = baseShare * n;
+                        const remainder = Math.round((amount - totalAssigned) * 100);
+                        calculated = standardizeAmount(baseShare + (remainder / 100));
+                      } else {
+                        calculated = baseShare;
+                      }
+                    }
                   }
                   return (
                     <tr key={m} className={error ? 'split-error-row' : ''}>
@@ -784,7 +802,7 @@ const Activities = () => {
                       )}
                       {splitType === 'equal' && (
                         <td>
-                          {amount > 0 ? `$${(amount / involved.length).toFixed(2)}` : '-'}
+                          {amount > 0 ? `$${calculated.toFixed(2)}` : '-'}
                         </td>
                       )}
                       <td>${calculated.toFixed(2)}</td>
