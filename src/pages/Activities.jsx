@@ -176,7 +176,7 @@ const Activities = () => {
       return;
     }
 
-    const amount = parseFloat(newExpense.amount);
+    const amount = standardizeAmount(parseFloat(newExpense.amount));
     if (isNaN(amount) || amount <= 0) {
       setError('Please enter a valid amount');
       return;
@@ -361,6 +361,16 @@ const Activities = () => {
     }
   };
 
+  // Helper function to standardize monetary values to 2 decimal places
+  const standardizeAmount = (amount) => {
+    return Math.round(amount * 100) / 100;
+  };
+
+  // Helper function to check if a balance is effectively zero (within rounding tolerance)
+  const isEffectivelyZero = (balance) => {
+    return Math.abs(balance) < 0.005; // 0.5 cents tolerance
+  };
+
   const calculateBalances = () => {
     const balances = {};
     group.members.forEach(member => {
@@ -384,9 +394,9 @@ const Activities = () => {
           typeof rateExpense === 'number' &&
           rateExpense !== 0
         ) {
-          return amount * (rateBase / rateExpense);
+          return standardizeAmount(amount * (rateBase / rateExpense));
         }
-        return amount;
+        return standardizeAmount(amount);
       };
       // Only credit payer if this is not a true solo expense (payer is the only participant)
       if (
@@ -395,12 +405,12 @@ const Activities = () => {
         expense.splits &&
         !(expense.splits.length === 1 && expense.splits[0].member === expense.paidBy)
       ) {
-        balances[expense.paidBy] += convert(expense.amount);
+        balances[expense.paidBy] = standardizeAmount(balances[expense.paidBy] + convert(expense.amount));
       }
       if (expense.splits) {
         expense.splits.forEach(split => {
           if (Object.prototype.hasOwnProperty.call(balances, split.member)) {
-            balances[split.member] -= convert(split.amountOwed);
+            balances[split.member] = standardizeAmount(balances[split.member] - convert(split.amountOwed));
           }
         });
       }
@@ -408,10 +418,10 @@ const Activities = () => {
     payments.forEach(payment => {
       // Assume payments are always in base currency for now
       if (Object.prototype.hasOwnProperty.call(balances, payment.fromUser)) {
-        balances[payment.fromUser] += payment.amount;
+        balances[payment.fromUser] = standardizeAmount(balances[payment.fromUser] + payment.amount);
       }
       if (Object.prototype.hasOwnProperty.call(balances, payment.toUser)) {
-        balances[payment.toUser] -= payment.amount;
+        balances[payment.toUser] = standardizeAmount(balances[payment.toUser] - payment.amount);
       }
     });
     return balances;
@@ -422,11 +432,11 @@ const Activities = () => {
     try {
       const balances = calculateBalances();
       const nudgePromises = Object.entries(balances)
-        .filter(([, balance]) => balance < -0.01)
+        .filter(([, balance]) => balance < 0 && !isEffectivelyZero(balance))
         .map(([member, balance]) => {
           // Find the creditor (the person they owe the most to)
           const creditors = Object.entries(balances)
-            .filter(([, bal]) => bal > 0)
+            .filter(([, bal]) => bal > 0 && !isEffectivelyZero(bal))
             .sort(([, a], [, b]) => b - a);
           if (creditors.length === 0) return null;
           const [creditor] = creditors[0];
@@ -435,12 +445,12 @@ const Activities = () => {
             user: member,
             groupName: group.name,
             createdAt: new Date(),
-            message: `Please settle up with ${memberDisplay(creditor, false)}! You currently owe him $${Math.abs(balance).toFixed(2)} in ${group.name}`
+            message: `Please settle up with ${memberDisplay(creditor, false)}! You currently owe him $${Math.abs(standardizeAmount(balance)).toFixed(2)} in ${group.name}`
           });
         });
       await Promise.all(nudgePromises.filter(Boolean));
       alert('Nudge sent to all users who owe money!');
-    } catch (err) {
+    } catch {
       alert('Failed to send nudge.');
     } finally {
       setNudgeLoading(false);
@@ -475,8 +485,8 @@ const Activities = () => {
   function getMinimalSettleUp(balances) {
     // Convert balances to array of { member, balance }
     const entries = Object.entries(balances)
-      .map(([member, balance]) => ({ member, balance: Math.round(balance * 100) / 100 }))
-      .filter(e => Math.abs(e.balance) > 0.01);
+      .map(([member, balance]) => ({ member, balance: standardizeAmount(balance) }))
+      .filter(e => !isEffectivelyZero(e.balance));
     const debtors = entries.filter(e => e.balance < 0).map(e => ({ ...e }));
     const creditors = entries.filter(e => e.balance > 0).map(e => ({ ...e }));
     // Sort debtors (most negative first), creditors (most positive first)
@@ -487,14 +497,14 @@ const Activities = () => {
     while (i < debtors.length && j < creditors.length) {
       const debtor = debtors[i];
       const creditor = creditors[j];
-      const amount = Math.min(-debtor.balance, creditor.balance);
-      if (amount > 0.01) {
+      const amount = standardizeAmount(Math.min(-debtor.balance, creditor.balance));
+      if (!isEffectivelyZero(amount)) {
         transactions.push({ from: debtor.member, to: creditor.member, amount });
-        debtor.balance += amount;
-        creditor.balance -= amount;
+        debtor.balance = standardizeAmount(debtor.balance + amount);
+        creditor.balance = standardizeAmount(creditor.balance - amount);
       }
-      if (Math.abs(debtor.balance) < 0.01) i++;
-      if (creditor.balance < 0.01) j++;
+      if (isEffectivelyZero(debtor.balance)) i++;
+      if (isEffectivelyZero(creditor.balance)) j++;
     }
     return transactions;
   }
@@ -633,16 +643,20 @@ const Activities = () => {
           </select>
           <input
             type="number"
-            step="0.01"
             placeholder="Amount"
             value={newExpense.amount}
             onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || parseFloat(val) >= 0) {
-                setNewExpense({ ...newExpense, amount: val });
+              const value = e.target.value;
+              // Restrict to 2 decimal places
+              if (value.includes('.') && value.split('.')[1]?.length > 2) {
+                return;
               }
+              setNewExpense({...newExpense, amount: value});
             }}
+            step="0.01"
+            min="0"
             className="form-input"
+            required
           />
           {/* Category selector */}
           <select
@@ -753,10 +767,17 @@ const Activities = () => {
                             min="0"
                             step="0.01"
                             value={newExpense.exactSplits[m] || ''}
-                            onChange={e => setNewExpense({
-                              ...newExpense,
-                              exactSplits: { ...newExpense.exactSplits, [m]: e.target.value }
-                            })}
+                            onChange={e => {
+                              const value = e.target.value;
+                              // Restrict to 2 decimal places
+                              if (value.includes('.') && value.split('.')[1]?.length > 2) {
+                                return;
+                              }
+                              setNewExpense({
+                                ...newExpense,
+                                exactSplits: { ...newExpense.exactSplits, [m]: value }
+                              });
+                            }}
                             className="split-input"
                           />
                         </td>
@@ -808,13 +829,13 @@ const Activities = () => {
               {Object.entries(balances).map(([member, balance]) => (
                 <div 
                   key={member} 
-                  className={`balance-item ${balance > 0.01 ? 'positive' : balance < -0.01 ? 'negative' : 'neutral'}`}
+                  className={`balance-item ${balance > 0 && !isEffectivelyZero(balance) ? 'positive' : balance < 0 && !isEffectivelyZero(balance) ? 'negative' : 'neutral'}`}
                 >
                   <div className="balance-name">{memberDisplay(member)}</div>
                   <div className="balance-amount">
                     ${Math.abs(balance).toFixed(2)} 
                     <span className="balance-status">
-                      {balance > 0 ? '(gets back)' : balance < 0 ? '(owes)' : '(even)'}
+                      {balance > 0 && !isEffectivelyZero(balance) ? '(gets back)' : balance < 0 && !isEffectivelyZero(balance) ? '(owes)' : '(even)'}
                     </span>
                   </div>
                 </div>

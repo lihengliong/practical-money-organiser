@@ -173,6 +173,16 @@ function Groups() {
       fetchRates();
     }, [baseCurrency]);
 
+    // Helper function to standardize monetary values to 2 decimal places
+    const standardizeAmount = (amount) => {
+      return Math.round(amount * 100) / 100;
+    };
+
+    // Helper function to check if a balance is effectively zero (within rounding tolerance)
+    const isEffectivelyZero = (balance) => {
+      return Math.abs(balance) < 0.005; // 0.5 cents tolerance
+    };
+
     // Fetch group balances for the user (with currency conversion)
     useEffect(() => {
       const fetchAllGroupBalances = async () => {
@@ -194,18 +204,18 @@ function Groups() {
               expense.splits.forEach(split => {
                 if (split.member !== user.email) {
                   if (expenseCurrency !== baseCurrency && exchangeRates[expenseCurrency]) {
-                    balance += (split.amountOwed / exchangeRates[expenseCurrency]);
+                    balance = standardizeAmount(balance + (split.amountOwed / exchangeRates[expenseCurrency]));
                   } else {
-                    balance += split.amountOwed;
+                    balance = standardizeAmount(balance + split.amountOwed);
                   }
                 }
               });
             } else if (expense.splits.some(s => s.member === user.email)) {
               const userSplit = expense.splits.find(s => s.member === user.email);
               if (expenseCurrency !== baseCurrency && exchangeRates[expenseCurrency]) {
-                balance -= (userSplit.amountOwed / exchangeRates[expenseCurrency]);
+                balance = standardizeAmount(balance - (userSplit.amountOwed / exchangeRates[expenseCurrency]));
               } else {
-                balance -= userSplit.amountOwed;
+                balance = standardizeAmount(balance - userSplit.amountOwed);
               }
             }
           });
@@ -213,9 +223,9 @@ function Groups() {
             // Assume payments are always in base currency for now
             // If you want to support payment currency, add similar conversion logic
             if (payment.fromUser === user.email) {
-              balance += payment.amount;
+              balance = standardizeAmount(balance + payment.amount);
             } else if (payment.toUser === user.email) {
-              balance -= payment.amount;
+              balance = standardizeAmount(balance - payment.amount);
             }
           });
           balances[group.id] = balance;
@@ -565,7 +575,7 @@ function Groups() {
                         }
                         return (
                           <>
-                            {groupBalances[group.id] > 0 ? (
+                            {groupBalances[group.id] > 0 && !isEffectivelyZero(groupBalances[group.id]) ? (
                               <span style={{ color: 'green', fontWeight: 600 }}>
                                 You are owed ${groupBalances[group.id].toFixed(2)} {base}
                                 {showConverted && (
@@ -574,7 +584,7 @@ function Groups() {
                                   </span>
                                 )}
                               </span>
-                            ) : groupBalances[group.id] < 0 ? (
+                            ) : groupBalances[group.id] < 0 && !isEffectivelyZero(groupBalances[group.id]) ? (
                               <span style={{ color: 'red', fontWeight: 600 }}>
                                 You owe ${Math.abs(groupBalances[group.id]).toFixed(2)} {base}
                                 {showConverted && (
