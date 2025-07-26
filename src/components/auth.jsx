@@ -19,7 +19,7 @@ export const Auth = () => {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         if (currentUser) {
           setUser(currentUser);
-          navigate('/groups');
+          navigate('/dashboard');
         } else {
           setUser(null);
         }
@@ -65,7 +65,7 @@ export const Auth = () => {
         setError("");
         const res = await signInWithPopup(auth, googleProvider);
         await createUserInFirestore(res.user); // ✅ Create if doesn't exist
-        navigate("/groups");
+        navigate("/dashboard");
       } catch (err) {
         setError(err.message);
         console.error(err);

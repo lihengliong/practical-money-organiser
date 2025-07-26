@@ -1,7 +1,8 @@
 /* activities.css */
 
 /* Container Styles */
-.activities-container {
+.activities-container,
+.group-expenses-container {
   padding: 20px;
   max-width: 1400px;
   width: 100%;
@@ -9,13 +10,15 @@
 }
 
 @media (max-width: 1024px) {
-  .activities-container {
+  .activities-container,
+  .group-expenses-container {
     max-width: 98vw;
     padding: 12px;
   }
 }
 @media (max-width: 600px) {
-  .activities-container {
+  .activities-container,
+  .group-expenses-container {
     max-width: 100vw;
     padding: 6px;
   }
@@ -66,6 +69,7 @@
   border: 1.5px solid #e0e0e0;
   border-radius: 18px;
   padding: 22px 24px 18px 24px; /* reduced from 38px 36px 32px 36px */
+  margin-top: 30px; /* added margin to separate from buttons above */
   margin-bottom: 28px; /* slightly reduced */
   box-shadow: 0 6px 32px rgba(60, 120, 80, 0.10);
   max-width: 100%;
