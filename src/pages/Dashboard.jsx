@@ -4,6 +4,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { fetchExchangeRates } from '../utils/currency';
 import CurrencySelector from '../components/CurrencySelector';
+import { useCurrency } from '../contexts/CurrencyContext';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend
@@ -15,7 +16,8 @@ const pieColors = ["#3b82f6", "#10b981", "#f59e42", "#a78bfa", "#f43f5e", "#6366
 const Dashboard = () => {
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(true);
-  const [baseCurrency, setBaseCurrency] = useState('SGD');
+  // Use global currency context instead of local state
+  const { baseCurrency } = useCurrency();
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
   const [allExpenses, setAllExpenses] = useState([]);
   const [allPayments, setAllPayments] = useState([]);

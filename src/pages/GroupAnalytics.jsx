@@ -11,6 +11,7 @@ import './stylesheets/analytics.css';
 import CurrencySelector from '../components/CurrencySelector';
 import { fetchExchangeRates } from '../utils/currency';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const pieColors = ["#3b82f6", "#10b981", "#f59e42", "#a78bfa", "#f43f5e", "#6366f1", "#fbbf24", "#ef4444"];
 
@@ -136,7 +137,8 @@ export default function GroupAnalytics() {
   const [lineData, setLineData] = useState([]);
   const [allExpenses, setAllExpenses] = useState([]);
   const [barData, setBarData] = useState([]);
-  const [baseCurrency, setBaseCurrency] = useState('SGD');
+  // Use global currency context instead of local state
+  const { baseCurrency } = useCurrency();
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
   const now = new Date();
   const [pieMode, setPieMode] = useState('month');
@@ -375,7 +377,8 @@ export default function GroupAnalytics() {
 function ExpenseBreakdownByCategory({ allExpenses }) {
   const { pieMode, setPieMode } = usePieMode();
   const [pieData, setPieData] = useState([]);
-  const [baseCurrency] = useState('SGD');
+  // Use global currency context instead of local state
+  const { baseCurrency } = useCurrency();
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
   useEffect(() => {
     const fetchRates = async () => {

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import './stylesheets/groups.css';
 import { fetchExchangeRates } from '../utils/currency';
 import CurrencySelector from '../components/CurrencySelector';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 function Groups() {
     const [groups, setGroups] = useState([]);
@@ -13,8 +14,8 @@ function Groups() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [groupBalances, setGroupBalances] = useState({});
-    // Add state for base currency and exchange rates
-    const [baseCurrency, setBaseCurrency] = useState('SGD'); // Default to SGD
+    // Use global currency context instead of local state
+    const { baseCurrency } = useCurrency();
     const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
     const [fetchingRates, setFetchingRates] = useState(false);
     const [loadingRates, setLoadingRates] = useState(true);
@@ -217,7 +218,7 @@ function Groups() {
           <div style={{ color: '#888', marginBottom: 16 }}>Loading exchange rates...</div>
         )}
         {/* Base currency selector */}
-        <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} style={{ marginBottom: 20 }} />
+        <CurrencySelector style={{ marginBottom: 20 }} />
         {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
         
         {/* Create Group Button - positioned above the heading */}

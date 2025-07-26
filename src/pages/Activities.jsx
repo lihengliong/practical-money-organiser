@@ -7,6 +7,7 @@ import Select from 'react-select';
 import './stylesheets/group-expenses.css';
 import { fetchExchangeRates } from '../utils/currency';
 import CurrencySelector from '../components/CurrencySelector';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const SPLIT_TYPES = [ 
   { key: 'equal',   label: 'Equal Splits' },
@@ -44,8 +45,8 @@ const categoryOptions = [
 ];
 
 const GroupExpenses = () => {
-  // Local base currency state for this group/expenses page
-  const [baseCurrency, setBaseCurrency] = useState('SGD');
+  // Use global currency context instead of local state
+  const { baseCurrency } = useCurrency();
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
 
   const location = useLocation();
@@ -563,7 +564,7 @@ const GroupExpenses = () => {
   return (
     <div className="group-expenses-container">
       {/* Base currency selector */}
-      <CurrencySelector value={baseCurrency} onChange={e => setBaseCurrency(e.target.value)} />
+              <CurrencySelector />
       {/* Header */}
       <div className="group-expenses-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>

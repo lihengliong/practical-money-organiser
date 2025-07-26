@@ -9,24 +9,27 @@ import Profile from './pages/Profile';
 import GroupAnalytics from './pages/GroupAnalytics';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Layout } from './layout'
+import { CurrencyProvider } from './contexts/CurrencyContext'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Auth />} />
-        <Route element={<Layout />}>
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/groups" element={<Groups />} />
-          <Route path="/groups/create" element={<GroupCreate />} />
-          <Route path="/group-expenses/:groupId" element={<GroupExpenses />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/group-analytics" element={<GroupAnalytics />} />
-        </Route>
-        <Route path="*" element={<div>404: Page Not Found</div>} />
-      </Routes>
-    </BrowserRouter>
+    <CurrencyProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Auth />} />
+          <Route element={<Layout />}>
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/groups" element={<Groups />} />
+            <Route path="/groups/create" element={<GroupCreate />} />
+            <Route path="/group-expenses/:groupId" element={<GroupExpenses />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/group-analytics" element={<GroupAnalytics />} />
+          </Route>
+          <Route path="*" element={<div>404: Page Not Found</div>} />
+        </Routes>
+      </BrowserRouter>
+    </CurrencyProvider>
   );
 }
 
