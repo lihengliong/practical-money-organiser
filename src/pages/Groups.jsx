@@ -299,40 +299,16 @@ function Groups() {
                       <span style={{ color: '#888' }}>Loading balance...</span>
                     ) : (
                       (() => {
-                        const base = baseCurrency.toUpperCase();
-                        const preferred = 'SGD'; // Change to user's preferred currency if needed
-                        const rateBase = exchangeRates[base];
-                        const ratePreferred = exchangeRates[preferred];
-                        let showConverted = false;
-                        let converted = groupBalances[group.id];
-                        if (
-                          base !== preferred &&
-                          typeof rateBase === 'number' &&
-                          typeof ratePreferred === 'number' &&
-                          rateBase !== 0
-                        ) {
-                          converted = groupBalances[group.id] * (ratePreferred / rateBase);
-                          showConverted = true;
-                        }
+                        const balance = groupBalances[group.id];
                         return (
                           <>
-                            {groupBalances[group.id] > 0 && !isEffectivelyZero(groupBalances[group.id]) ? (
+                            {balance > 0 && !isEffectivelyZero(balance) ? (
                               <span style={{ color: 'green', fontWeight: 600 }}>
-                                You are owed ${groupBalances[group.id].toFixed(2)} {base}
-                                {showConverted && (
-                                  <span style={{ color: '#007bff', fontWeight: 500, marginLeft: 8 }}>
-                                    (≈ {converted.toFixed(2)} {preferred})
-                                  </span>
-                                )}
+                                You are owed {balance.toFixed(2)} {baseCurrency}
                               </span>
-                            ) : groupBalances[group.id] < 0 && !isEffectivelyZero(groupBalances[group.id]) ? (
+                            ) : balance < 0 && !isEffectivelyZero(balance) ? (
                               <span style={{ color: 'red', fontWeight: 600 }}>
-                                You owe ${Math.abs(groupBalances[group.id]).toFixed(2)} {base}
-                                {showConverted && (
-                                  <span style={{ color: '#007bff', fontWeight: 500, marginLeft: 8 }}>
-                                    (≈ {Math.abs(converted).toFixed(2)} {preferred})
-                                  </span>
-                                )}
+                                You owe {Math.abs(balance).toFixed(2)} {baseCurrency}
                               </span>
                             ) : (
                               <span style={{ color: '#007bff', fontWeight: 600 }}>All settled up!</span>
