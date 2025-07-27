@@ -54,6 +54,20 @@ const GroupExpenses = () => {
   const [user] = useAuthState(auth);
   const group = location.state?.group;
 
+  // Helper function to fetch user profile
+  const fetchUserProfile = async (email) => {
+    try {
+      const userDoc = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
+      if (!userDoc.empty) {
+        return userDoc.docs[0].data();
+      }
+      return { displayName: email.split('@')[0] };
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return { displayName: email.split('@')[0] };
+    }
+  };
+
   const memberDisplay = (member, showEmail = true) => {
     const profile = group.memberProfiles?.find(p => p.email === member);
     if (!profile) return member;
@@ -81,7 +95,7 @@ const GroupExpenses = () => {
     {value: 'ALL', label: 'All Members' },
     ...members.map(member => ({
       value: member,
-      label: memberDisplay(member)
+      label: memberDisplay(member, false) // Show only display name, not email
     }))
   ]
 
@@ -132,6 +146,18 @@ const GroupExpenses = () => {
       setError('');
 
       console.log('Fetching data for group:', group.name, 'ID:', group.id);
+
+      // Fetch member profiles if not already loaded
+      if (!group.memberProfiles) {
+        const memberProfiles = await Promise.all(
+          group.members.map(async email => {
+            const profile = await fetchUserProfile(email);
+            return { email, displayName: profile.displayName };
+          })
+        );
+        // Update the group object with member profiles
+        group.memberProfiles = memberProfiles;
+      }
 
       const expensesQuery = query(
         collection(db, 'expenses'),
@@ -678,7 +704,7 @@ const GroupExpenses = () => {
           >
             <option value="">Who paid?</option>
             {group.members.map(member => (
-              <option key={member} value={member}>{memberDisplay(member)}</option>
+              <option key={member} value={member}>{memberDisplay(member, false)}</option>
             ))}
           </select>
           <Select
@@ -750,7 +776,7 @@ const GroupExpenses = () => {
                   }
                   return (
                     <tr key={m} className={error ? 'split-error-row' : ''}>
-                      <td>{memberDisplay(m)}</td>
+                      <td>{memberDisplay(m, false)}</td>
                       {splitType === 'percent' && (
                         <td>
                           <input
