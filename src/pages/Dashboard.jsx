@@ -227,13 +227,16 @@ const Dashboard = () => {
   return (
     <div className="dashboard-analytics-container">
       <div className="dashboard-welcome">
-        Welcome, {user.displayName || user.email}!
+        Welcome, {user.displayName ? user.displayName : user.email.split('@')[0]}!
       </div>
       <div className="dashboard-analytics-summary-wrapper">
         <div className="dashboard-analytics-summary-grid">
           <div className="dashboard-analytics-card dashboard-analytics-card-blue">
             <div className="dashboard-analytics-card-title">Net Balance</div>
-            <div className="dashboard-analytics-card-value dashboard-analytics-card-value-blue" style={{ color: netBalance > 0 ? '#10b981' : netBalance < 0 ? '#ef4444' : '#64748b' }}>{netBalance > 0 ? '+' : ''}{netBalance.toFixed(2)} {baseCurrency}</div>
+            <div className="dashboard-analytics-card-value dashboard-analytics-card-value-blue"
+              style={{ color: netBalance > 0.009 ? '#10b981' : netBalance < -0.009 ? '#ef4444' : '#64748b' }}>
+              {netBalance > 0.009 ? '+' : ''}{Math.abs(netBalance) < 0.01 ? '0.00' : netBalance.toFixed(2)} {baseCurrency}
+            </div>
           </div>
           <div className="dashboard-analytics-card dashboard-analytics-card-green">
             <div className="dashboard-analytics-card-title">Total Expenses for the Month</div>
