@@ -159,7 +159,6 @@ export const Auth = () => {
                            active:enabled:translate-y-0
                            disabled:bg-slate-400 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none
                            focus:outline-2 focus:outline-emerald-500 focus:outline-offset-2">
-              >
                 {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
               </button>
             </form>
@@ -204,7 +203,6 @@ export const Auth = () => {
                            text-[15px] font-semibold transition-colors duration-300
                            hover:text-emerald-700 hover:underline
                            focus:outline-2 focus:outline-emerald-500 focus:outline-offset-2">
-              >
                 {isLogin ? "Sign Up" : "Sign In"}
               </button>
             </p>
