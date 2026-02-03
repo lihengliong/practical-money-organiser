@@ -3,7 +3,7 @@ const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 const ratesCache = new Map();
 
 export async function fetchExchangeRates(base = 'SGD') {
-  const API_KEY = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
+  const API_KEY = import.meta.env.VITE_EXCHANGE_RATE_API_KEY; // https://app.exchangerate-api.com/
   if (!API_KEY) {
     throw new Error('Exchange rate API key not configured. Please set VITE_EXCHANGE_RATE_API_KEY in .env file');
   }
