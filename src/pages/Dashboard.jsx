@@ -250,7 +250,7 @@ const Dashboard = () => {
             </div>
             <div className="text-[2rem] font-extrabold mb-1 leading-tight text-emerald-600 shadow-sm
                             max-sm:text-[1.3em]">
-              ${monthlyTotal.toFixed(2)}
+              {monthlyTotal.toFixed(2)} {baseCurrency}
             </div>
           </div>
 
@@ -261,7 +261,7 @@ const Dashboard = () => {
             </div>
             <div className="text-[2rem] font-extrabold mb-1 leading-tight text-violet-600 shadow-sm
                             max-sm:text-[1.3em]">
-              ${avgYearly.toFixed(2)}
+              {avgYearly.toFixed(2)} {baseCurrency}
             </div>
           </div>
 

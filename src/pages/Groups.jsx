@@ -4,7 +4,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import { fetchExchangeRates } from '../utils/currency';
-import CurrencySelector from '../components/CurrencySelector';
 import { useCurrency } from '../contexts/CurrencyContext';
 
 function Groups() {
@@ -214,13 +213,6 @@ function Groups() {
 
     return (
       <div className="page-container">
-        {loadingRates && (
-          <div className="text-gray-500 mb-4">Loading exchange rates...</div>
-        )}
-        {/* Base currency selector */}
-        <CurrencySelector className="mb-5" />
-        {fetchingRates && <span className="ml-2.5 text-gray-500">Fetching rates...</span>}
-        
         {/* Create Group Button - positioned above the heading */}
         <div className="flex justify-end mb-4">
           <button

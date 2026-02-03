@@ -1,5 +1,8 @@
 export async function fetchExchangeRates(base = 'SGD') {
-  const API_KEY = '1734f66aed7839eee5e0d51e'; //(levileox@gmail.com - create new account & key when api usage runs out)
+  const API_KEY = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
+  if (!API_KEY) {
+    throw new Error('Exchange rate API key not configured. Please set VITE_EXCHANGE_RATE_API_KEY in .env file');
+  }
   const url = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${base}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch exchange rates');

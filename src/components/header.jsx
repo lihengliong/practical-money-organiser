@@ -5,6 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import { MdNotificationsNone } from 'react-icons/md';
 import NotificationsSidebar from './NotificationsSidebar';
+import CurrencySelector from './CurrencySelector';
 import { db } from '../config/firebase';
 import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 
@@ -79,6 +80,9 @@ const Header = () => {
 
         {user && (
           <div className="flex items-center gap-4 ml-auto">
+            {/* Currency Selector */}
+            <CurrencySelector className="!mb-0" id="header-currency-select" label="Currency:" />
+            
             {/* User info */}
             <div
               className="flex items-center gap-3 rounded-2xl cursor-pointer
