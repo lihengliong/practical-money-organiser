@@ -239,7 +239,11 @@ const Dashboard = () => {
             <div className={`text-[2rem] font-extrabold mb-1 leading-tight shadow-sm
                             max-sm:text-[1.3em]
                             ${netBalance > 0.009 ? 'text-emerald-500' : netBalance < -0.009 ? 'text-red-500' : 'text-slate-500'}`}>
-              {netBalance > 0.009 ? '+' : ''}{Math.abs(netBalance) < 0.01 ? '0.00' : netBalance.toFixed(2)} {baseCurrency}
+              {baseCurrency === 'DEFAULT' ? (
+                <span className="text-sm text-gray-500">Select currency</span>
+              ) : (
+                <>{netBalance > 0.009 ? '+' : ''}{Math.abs(netBalance) < 0.01 ? '0.00' : netBalance.toFixed(2)} {baseCurrency}</>
+              )}
             </div>
           </div>
 
@@ -250,7 +254,11 @@ const Dashboard = () => {
             </div>
             <div className="text-[2rem] font-extrabold mb-1 leading-tight text-emerald-600 shadow-sm
                             max-sm:text-[1.3em]">
-              {monthlyTotal.toFixed(2)} {baseCurrency}
+              {baseCurrency === 'DEFAULT' ? (
+                <span className="text-sm text-gray-500">Select currency</span>
+              ) : (
+                <>{monthlyTotal.toFixed(2)} {baseCurrency}</>
+              )}
             </div>
           </div>
 
@@ -261,7 +269,11 @@ const Dashboard = () => {
             </div>
             <div className="text-[2rem] font-extrabold mb-1 leading-tight text-violet-600 shadow-sm
                             max-sm:text-[1.3em]">
-              {avgYearly.toFixed(2)} {baseCurrency}
+              {baseCurrency === 'DEFAULT' ? (
+                <span className="text-sm text-gray-500">Select currency</span>
+              ) : (
+                <>{avgYearly.toFixed(2)} {baseCurrency}</>
+              )}
             </div>
           </div>
 

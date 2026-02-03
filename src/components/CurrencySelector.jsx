@@ -1,6 +1,7 @@
 import { useCurrency } from '../contexts/CurrencyContext';
 
 const currencyOptions = [
+  { value: 'DEFAULT', label: 'Original' },
   { value: 'SGD', label: 'SGD (Singapore Dollar)' },
   { value: 'USD', label: 'USD (US Dollar)' },
   { value: 'EUR', label: 'EUR (Euro)' },

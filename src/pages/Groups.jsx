@@ -147,34 +147,53 @@ function Groups() {
           // Calculate balance
           let balance = 0;
           expenses.forEach(expense => {
-            // Default to baseCurrency if no currency field
-            const expenseCurrency = expense.currency || baseCurrency;
+            // Get the original expense currency (default to SGD if not set)
+            const expenseCurrency = expense.currency || 'SGD';
+            
+            // Convert expense amounts to base currency
+            const convertToBaseCurrency = (amount) => {
+              if (expenseCurrency === baseCurrency || baseCurrency === 'DEFAULT') {
+                return amount;
+              }
+              const rateBase = exchangeRates[baseCurrency];
+              const rateExpense = exchangeRates[expenseCurrency];
+              if (rateBase && rateExpense && rateExpense !== 0) {
+                // Convert: amount in expenseCurrency * (rateBase / rateExpense) = amount in baseCurrency
+                return amount * (rateBase / rateExpense);
+              }
+              return amount; // Fallback to original if rates unavailable
+            };
+
             if (expense.paidBy === user.email) {
               expense.splits.forEach(split => {
                 if (split.member !== user.email) {
-                  if (expenseCurrency !== baseCurrency && exchangeRates[expenseCurrency]) {
-                    balance = standardizeAmount(balance + (split.amountOwed / exchangeRates[expenseCurrency]));
-                  } else {
-                    balance = standardizeAmount(balance + split.amountOwed);
-                  }
+                  balance = standardizeAmount(balance + convertToBaseCurrency(split.amountOwed));
                 }
               });
             } else if (expense.splits.some(s => s.member === user.email)) {
               const userSplit = expense.splits.find(s => s.member === user.email);
-              if (expenseCurrency !== baseCurrency && exchangeRates[expenseCurrency]) {
-                balance = standardizeAmount(balance - (userSplit.amountOwed / exchangeRates[expenseCurrency]));
-              } else {
-                balance = standardizeAmount(balance - userSplit.amountOwed);
-              }
+              balance = standardizeAmount(balance - convertToBaseCurrency(userSplit.amountOwed));
             }
           });
           payments.forEach(payment => {
-            // Assume payments are always in base currency for now
-            // If you want to support payment currency, add similar conversion logic
+            // Convert payments to base currency
+            const paymentCurrency = payment.currency || 'SGD';
+            const convertPayment = (amount) => {
+              if (paymentCurrency === baseCurrency || baseCurrency === 'DEFAULT') {
+                return amount;
+              }
+              const rateBase = exchangeRates[baseCurrency];
+              const ratePayment = exchangeRates[paymentCurrency];
+              if (rateBase && ratePayment && ratePayment !== 0) {
+                return amount * (rateBase / ratePayment);
+              }
+              return amount;
+            };
+            
             if (payment.fromUser === user.email) {
-              balance = standardizeAmount(balance + payment.amount);
+              balance = standardizeAmount(balance + convertPayment(payment.amount));
             } else if (payment.toUser === user.email) {
-              balance = standardizeAmount(balance - payment.amount);
+              balance = standardizeAmount(balance - convertPayment(payment.amount));
             }
           });
           balances[group.id] = balance;
@@ -257,8 +276,19 @@ function Groups() {
                     <div className="my-2">
                       <div className="text-sm text-gray-600 mb-0.5">Recent Expenses:</div>
                       {group.recentExpenses.map((expense, idx) => {
+                        const expenseCurrency = (expense.currency || 'SGD').toUpperCase();
+                        
+                        if (baseCurrency === 'DEFAULT') {
+                          // Show original currency only
+                          return (
+                            <div key={idx} className="text-sm mb-0.5">
+                              <span className="font-medium">{expense.description}</span>: {expense.amount?.toFixed(2)} {expenseCurrency}
+                            </div>
+                          );
+                        }
+                        
+                        // Convert to base currency
                         const base = baseCurrency.toUpperCase();
-                        const expenseCurrency = (expense.currency || base).toUpperCase();
                         const rateBase = exchangeRates[base];
                         const rateExpense = exchangeRates[expenseCurrency];
                         let convertedAmount = expense.amount;
@@ -272,12 +302,7 @@ function Groups() {
                         }
                         return (
                           <div key={idx} className="text-sm mb-0.5">
-                            <span className="font-medium">{expense.description}</span>: {expense.amount?.toFixed(2)} {expenseCurrency}
-                            {expenseCurrency !== base && typeof rateBase === 'number' && typeof rateExpense === 'number' && rateExpense !== 0 ? (
-                              <span className="text-gray-500 text-[0.95em]">
-                                {' '} (≈ {convertedAmount.toFixed(2)} {base})
-                              </span>
-                            ) : null}
+                            <span className="font-medium">{expense.description}</span>: {convertedAmount.toFixed(2)} {base}
                           </div>
                         );
                       })}
@@ -285,7 +310,9 @@ function Groups() {
                   )}
                   {/* Balance summary line */}
                   <div className="text-base mt-3 mb-2">
-                    {groupBalances[group.id] === undefined ? (
+                    {baseCurrency === 'DEFAULT' ? (
+                      <span className="text-gray-500 italic text-sm">Select a currency to calculate balances</span>
+                    ) : groupBalances[group.id] === undefined ? (
                       <span className="text-gray-500">Loading balance...</span>
                     ) : (
                       (() => {

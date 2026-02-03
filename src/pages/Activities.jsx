@@ -342,6 +342,7 @@ const GroupExpenses = () => {
         fromUser: fromUser,
         toUser: toUser,
         amount: amount,
+        currency: baseCurrency, // Store the currency used for this payment
         groupId: group.id,
         paymentDate: new Date(),
         status: 'completed'
@@ -373,7 +374,7 @@ const GroupExpenses = () => {
           groupId: group.id,
           groupName: group.name,
           createdAt: new Date(),
-          message: `${payerName} has paid you ${(group.currency || 'SGD').toUpperCase()} ${Number(amount).toFixed(2)} in ${group.name}`
+          message: `${payerName} has paid you ${baseCurrency.toUpperCase()} ${Number(amount).toFixed(2)} in ${group.name}`
         })
       ]);
 
@@ -445,12 +446,27 @@ const GroupExpenses = () => {
       }
     });
     payments.forEach(payment => {
-      // Assume payments are always in base currency for now
+      // Convert payment to base currency
+      const paymentCurrency = (payment.currency || baseCurrency).toUpperCase();
+      const base = baseCurrency.toUpperCase();
+      const rateBase = exchangeRates[base];
+      const ratePayment = exchangeRates[paymentCurrency];
+      const convertPayment = (amount) => {
+        if (
+          paymentCurrency !== base &&
+          typeof rateBase === 'number' &&
+          typeof ratePayment === 'number' &&
+          ratePayment !== 0
+        ) {
+          return standardizeAmount(amount * (rateBase / ratePayment));
+        }
+        return standardizeAmount(amount);
+      };
       if (Object.prototype.hasOwnProperty.call(balances, payment.fromUser)) {
-        balances[payment.fromUser] = standardizeAmount(balances[payment.fromUser] + payment.amount);
+        balances[payment.fromUser] = standardizeAmount(balances[payment.fromUser] + convertPayment(payment.amount));
       }
       if (Object.prototype.hasOwnProperty.call(balances, payment.toUser)) {
-        balances[payment.toUser] = standardizeAmount(balances[payment.toUser] - payment.amount);
+        balances[payment.toUser] = standardizeAmount(balances[payment.toUser] - convertPayment(payment.amount));
       }
     });
     return balances;
@@ -864,6 +880,55 @@ const GroupExpenses = () => {
           <h2 className="text-gray-500 mb-4">Ready to track expenses!</h2>
           <p className="text-gray-500 text-lg">Add your first expense above to get started with {group.name}.</p>
         </div>
+      ) : baseCurrency === 'DEFAULT' ? (
+        <div>
+          <h2 className="section-title">Recent Expenses (Original Currencies)</h2>
+          <p className="text-gray-500 mb-4 italic">Showing expenses in their original input currencies. Select a specific currency to convert and view balances.</p>
+          <div className="max-h-[500px] overflow-y-auto">
+            {expenses
+              .slice()
+              .sort((a, b) => {
+                const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+                return bDate - aDate;
+              })
+              .map(expense => {
+              const expenseCurrency = (expense.currency || 'SGD').toUpperCase();
+              return (
+                <div key={expense.id} className="card-clickable mb-5">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="expense-title" style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{expense.description}</div>
+                      <div className="expense-category" style={{ fontSize: '0.97em', color: '#8b5cf6', fontWeight: 500, margin: '2px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
+                        {expense.category ? expense.category : 'Other'}
+                      </div>
+                      <div className="expense-payer" style={{ fontSize: '0.97em', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+                        Paid by: {memberDisplay(expense.paidBy)}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                      <div className="expense-amount" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.35em', color: '#222', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <span>{expense.amount.toFixed(2)} {expenseCurrency}</span>
+                      </div>
+                      {user && expense.paidBy === user.email && (() => {
+                        const expenseCreatedAt = expense.createdAt?.toDate ? expense.createdAt.toDate() : new Date(expense.createdAt);
+                        if (earliestPaymentDate && expenseCreatedAt <= earliestPaymentDate) return null;
+                        return (
+                          <button
+                            className="btn-danger py-1.5 px-4 text-sm min-w-[70px]"
+                            onClick={() => deleteExpense(expense.id)}
+                          >
+                            Delete
+                          </button>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-8 md:grid-cols-1 md:gap-5">
           {/* Balances */}
@@ -877,7 +942,7 @@ const GroupExpenses = () => {
                 >
                   <div className="balance-name">{memberDisplay(member)}</div>
                   <div className="balance-amount">
-                    ${Math.abs(balance).toFixed(2)} 
+                    {Math.abs(balance).toFixed(2)} {baseCurrency}
                     <span className="balance-status">
                       {balance > 0 && !isEffectivelyZero(balance) ? '(gets back)' : balance < 0 && !isEffectivelyZero(balance) ? '(owes)' : '(even)'}
                     </span>
@@ -902,7 +967,7 @@ const GroupExpenses = () => {
                 getMinimalSettleUp(balances).map(({ from, to, amount }) => (
                   <div key={from + to} className="bg-white border border-gray-200 rounded-[10px] my-3 px-5 py-4 flex items-center justify-between shadow-[0_1px_6px_rgba(60,120,80,0.04)] text-lg">
                     <span>
-                      <strong>{memberDisplay(from, false)}</strong> owes ${amount.toFixed(2)} to <strong>{memberDisplay(to, false)}</strong>
+                      <strong>{memberDisplay(from, false)}</strong> owes {amount.toFixed(2)} {baseCurrency} to <strong>{memberDisplay(to, false)}</strong>
                     </span>
                     <button 
                       onClick={() => recordPayment(from, to, amount)}
@@ -929,18 +994,27 @@ const GroupExpenses = () => {
                 })
                 .map(expense => {
                 // Conversion logic
-                const base = baseCurrency.toUpperCase();
-                const expenseCurrency = (expense.currency || base).toUpperCase();
-                const rateBase = exchangeRates[base];
-                const rateExpense = exchangeRates[expenseCurrency];
-                let convertedAmount = expense.amount;
-                if (
-                  typeof rateBase === 'number' &&
-                  typeof rateExpense === 'number' &&
-                  rateExpense !== 0
-                ) {
-                  convertedAmount = expense.amount * (rateBase / rateExpense);
+                const expenseCurrency = (expense.currency || 'SGD').toUpperCase();
+                const showOriginalOnly = baseCurrency === 'DEFAULT';
+                
+                let displayAmount = expense.amount;
+                let displayCurrency = expenseCurrency;
+                
+                if (!showOriginalOnly) {
+                  const base = baseCurrency.toUpperCase();
+                  const rateBase = exchangeRates[base];
+                  const rateExpense = exchangeRates[expenseCurrency];
+                  if (
+                    expenseCurrency !== base &&
+                    typeof rateBase === 'number' &&
+                    typeof rateExpense === 'number' &&
+                    rateExpense !== 0
+                  ) {
+                    displayAmount = expense.amount * (rateBase / rateExpense);
+                    displayCurrency = base;
+                  }
                 }
+                
                 return (
                   <div key={expense.id} className="card-clickable mb-5">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0' }}>
@@ -956,11 +1030,8 @@ const GroupExpenses = () => {
                       </div>
                       {/* Amount and delete button as a flex row, no truncation */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-                        <div className="expense-amount" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.35em', color: '#222', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                          <span>{expense.amount.toFixed(2)} {expenseCurrency}</span>
-                          <span style={{ color: '#888', fontSize: '0.98em', fontWeight: 500, marginTop: 2 }}>
-                            (≈ {convertedAmount.toFixed(2)} {base})
-                          </span>
+                        <div className="expense-amount" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.35em', color: '#222', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          <span>{displayAmount.toFixed(2)} {displayCurrency}</span>
                         </div>
                         {/* Delete button, only for the payer and if not settled by payment */}
                         {user && expense.paidBy === user.email && (() => {
@@ -1002,6 +1073,29 @@ const GroupExpenses = () => {
                 const fromName = memberDisplay(payment.fromUser, false);
                 const toName = memberDisplay(payment.toUser, false);
                 const getInitials = name => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+                
+                // Determine display amount and currency
+                const paymentCurrency = payment.currency || 'SGD';
+                let displayAmount = payment.amount;
+                let displayCurrency = paymentCurrency;
+                
+                if (baseCurrency !== 'DEFAULT') {
+                  // Convert to base currency
+                  const base = baseCurrency.toUpperCase();
+                  const paymentCurr = paymentCurrency.toUpperCase();
+                  const rateBase = exchangeRates[base];
+                  const ratePayment = exchangeRates[paymentCurr];
+                  if (
+                    paymentCurr !== base &&
+                    typeof rateBase === 'number' &&
+                    typeof ratePayment === 'number' &&
+                    ratePayment !== 0
+                  ) {
+                    displayAmount = payment.amount * (rateBase / ratePayment);
+                    displayCurrency = base;
+                  }
+                }
+                
                 return (
                   <div key={payment.id} className="flex items-center justify-between bg-gradient-to-br from-slate-50/80 to-green-100/60 shadow-[0_6px_32px_rgba(60,120,80,0.10)] border-[1.5px] border-gray-200 rounded-[18px] relative my-7 pl-8 min-h-[76px] transition-[box-shadow,transform] duration-[0.22s,0.18s] hover:shadow-[0_12px_48px_rgba(60,120,80,0.18)] hover:-translate-y-[3px] hover:scale-[1.018] hover:bg-gradient-to-br hover:from-green-100/60 hover:to-slate-50/60 before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-3.5 before:h-3.5 before:bg-gradient-to-br before:from-green-600/60 before:to-green-200/60 before:rounded-full before:shadow-[0_2px_8px_rgba(183,228,199,0.67)] before:border-[2.5px] before:border-white before:z-[3]">
                     <span className="w-12 h-12 text-xl rounded-full border-2 border-green-200 mr-5 shadow-[0_2px_8px_rgba(25,118,210,0.10)] bg-white flex items-center justify-center font-bold z-[2]" style={{background:'#e3f2fd',color:'#1976d2',border:'2px solid #b7e4c7'}}>{getInitials(fromName)}</span>
@@ -1011,7 +1105,7 @@ const GroupExpenses = () => {
                       <span className="w-12 h-12 text-xl rounded-full border-2 border-green-200 mr-2 shadow-[0_2px_8px_rgba(25,118,210,0.10)] bg-white flex items-center justify-center font-bold z-[2]" style={{background:'#e8f5e9',color:'#388e3c',marginRight:8,border:'2px solid #b7e4c7'}}>{getInitials(toName)}</span>
                       <strong style={{color:'#388e3c'}}>{toName}</strong>
                     </span>
-                    <span className="text-[1.22em] text-green-900 font-extrabold ml-8 mr-5 tracking-[0.02em] [text-shadow:0_1px_2px_#e8f5e9]">${Number(payment.amount).toFixed(2)}</span>
+                    <span className="text-[1.22em] text-green-900 font-extrabold ml-8 mr-5 tracking-[0.02em] [text-shadow:0_1px_2px_#e8f5e9]">{Number(displayAmount).toFixed(2)} {displayCurrency}</span>
                     <span className="text-gray-400 text-[0.97em] min-w-[90px] text-right ml-auto italic font-normal opacity-85">
                       {payment.paymentDate.toDate?.().toLocaleDateString() || 'Recently'}
                     </span>
