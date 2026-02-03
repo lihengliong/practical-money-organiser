@@ -1,4 +1,3 @@
-import './App.css'
 import { Auth } from './components/Auth'
 import Friends from './pages/Friends'
 import Groups from './pages/Groups'

@@ -3,7 +3,6 @@ import { db, auth } from '../config/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
-import './stylesheets/groups.css';
 import { fetchExchangeRates } from '../utils/currency';
 import CurrencySelector from '../components/CurrencySelector';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -199,7 +198,7 @@ function Groups() {
 
     if (!user) {
       return (
-        <div className="login-required">
+        <div className="text-center py-5 text-lg text-gray-600">
           <div>Please log in to view groups.</div>
         </div>
       );
@@ -207,53 +206,51 @@ function Groups() {
 
     if (loading) {
       return (
-        <div className="loading-container">
+        <div className="text-center py-5 text-lg text-gray-600">
           <div>Loading...</div>
         </div>
       );
     }
 
     return (
-      <div className="groups-container">
+      <div className="page-container">
         {loadingRates && (
-          <div style={{ color: '#888', marginBottom: 16 }}>Loading exchange rates...</div>
+          <div className="text-gray-500 mb-4">Loading exchange rates...</div>
         )}
         {/* Base currency selector */}
-        <CurrencySelector style={{ marginBottom: 20 }} />
-        {fetchingRates && <span style={{ marginLeft: 10, color: '#888' }}>Fetching rates...</span>}
+        <CurrencySelector className="mb-5" />
+        {fetchingRates && <span className="ml-2.5 text-gray-500">Fetching rates...</span>}
         
         {/* Create Group Button - positioned above the heading */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <div className="flex justify-end mb-4">
           <button
-            className="create-group-btn"
+            className="btn-primary"
             onClick={() => navigate('/groups/create')}
-            style={{ fontWeight: 600, fontSize: 16, padding: '10px 24px', borderRadius: 8 }}
           >
             + Create Group
           </button>
         </div>
         
         {/* Your Groups heading */}
-        <h2 style={{ marginBottom: 24 }}>Your Groups</h2>
+        <h2 className="section-title">Your Groups</h2>
         
-        {error && <div className="error-message">{error}</div>}
-        <div className="groups-list-section">
+        {error && <div className="error-msg">{error}</div>}
+        <div className="w-full">
           {groups.length === 0 ? (
-            <p className="no-groups-message">No groups yet. Click "+ Create Group" to start!</p>
+            <p className="text-center py-10 text-gray-600 italic">No groups yet. Click "+ Create Group" to start!</p>
           ) : (
-            <div className="groups-grid">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {groups.map(group => (
                 <div 
                   key={group.id} 
                   onClick={() => openGroupExpenses(group)}
-                  className="group-card"
+                  className="card-clickable"
                 >
-                  <h3 className="group-name">{group.name}</h3>
-                  <p className="group-member-count">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2 tracking-tight">{group.name}</h3>
+                  <p className="text-sm text-gray-600 mb-1">
                     <strong>{group.memberProfiles ? group.memberProfiles.length : group.members.length}</strong> members
                   </p>
-                  <p className="group-member-list">
-                    {group.memberProfiles
+                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">{group.memberProfiles
                       ? group.memberProfiles
                           .slice(0, 3)
                           .map(m => m.displayName)
@@ -265,8 +262,8 @@ function Groups() {
                   </p>
                   {/* Recent expenses */}
                   {group.recentExpenses && group.recentExpenses.length > 0 && !loadingRates && (
-                    <div className="group-recent-expenses" style={{ margin: '8px 0' }}>
-                      <div style={{ fontSize: '0.95em', color: '#666', marginBottom: 2 }}>Recent Expenses:</div>
+                    <div className="my-2">
+                      <div className="text-sm text-gray-600 mb-0.5">Recent Expenses:</div>
                       {group.recentExpenses.map((expense, idx) => {
                         const base = baseCurrency.toUpperCase();
                         const expenseCurrency = (expense.currency || base).toUpperCase();
@@ -282,10 +279,10 @@ function Groups() {
                           convertedAmount = expense.amount * (rateBase / rateExpense);
                         }
                         return (
-                          <div key={idx} style={{ fontSize: '0.98em', marginBottom: 2 }}>
-                            <span style={{ fontWeight: 500 }}>{expense.description}</span>: {expense.amount?.toFixed(2)} {expenseCurrency}
+                          <div key={idx} className="text-sm mb-0.5">
+                            <span className="font-medium">{expense.description}</span>: {expense.amount?.toFixed(2)} {expenseCurrency}
                             {expenseCurrency !== base && typeof rateBase === 'number' && typeof rateExpense === 'number' && rateExpense !== 0 ? (
-                              <span style={{ color: '#888', fontSize: '0.95em' }}>
+                              <span className="text-gray-500 text-[0.95em]">
                                 {' '} (≈ {convertedAmount.toFixed(2)} {base})
                               </span>
                             ) : null}
@@ -295,34 +292,34 @@ function Groups() {
                     </div>
                   )}
                   {/* Balance summary line */}
-                  <div className="group-balance-summary">
+                  <div className="text-base mt-3 mb-2">
                     {groupBalances[group.id] === undefined ? (
-                      <span style={{ color: '#888' }}>Loading balance...</span>
+                      <span className="text-gray-500">Loading balance...</span>
                     ) : (
                       (() => {
                         const balance = groupBalances[group.id];
                         return (
                           <>
                             {balance > 0 && !isEffectivelyZero(balance) ? (
-                              <span style={{ color: 'green', fontWeight: 600 }}>
+                              <span className="text-emerald-500 font-semibold">
                                 You are owed {balance.toFixed(2)} {baseCurrency}
                               </span>
                             ) : balance < 0 && !isEffectivelyZero(balance) ? (
-                              <span style={{ color: 'red', fontWeight: 600 }}>
+                              <span className="text-red-500 font-semibold">
                                 You owe {Math.abs(balance).toFixed(2)} {baseCurrency}
                               </span>
                             ) : (
-                              <span style={{ color: '#007bff', fontWeight: 600 }}>All settled up!</span>
+                              <span className="text-emerald-500 font-semibold">All settled up!</span>
                             )}
                           </>
                         );
                       })()
                     )}
                   </div>
-                  <small className="group-creator">
+                  <small className="text-xs text-gray-500 block mb-3">
                     Created by: {group.createdBy}
                   </small>
-                  <div className="group-action-text">
+                  <div className="text-sm text-emerald-600 font-medium mt-auto">
                     Click to view expenses →
                   </div>
                 </div>

@@ -1,28 +1,159 @@
-.card{
-  border: 1px solid white;
-  border-radius: 10px;
-  box-shadow: 5px 5px 5px hsl(0, 0%, 38%);
-  padding: 20px;
-  margin: 10px;
-  text-align: center;
-  max-width: 250px;
-  display: inline-block;
+@import "tailwindcss";
+
+/* Custom theme extensions for Tailwind v4 */
+@theme {
+  /* Primary colors */
+  --color-primary-green: #27ae60;
+  --color-primary-green-light: #2ecc71;
+  --color-primary-blue: #2563eb;
+  --color-primary-blue-light: #3b82f6;
+
+  /* Semantic colors */
+  --color-success: #10b981;
+  --color-danger: #dc3545;
+  --color-danger-light: #f87171;
+  --color-warning: #f59e42;
+
+  /* Shadows */
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.1);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.15);
+  --shadow-button: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.welcome-message{
-  font-size: 2.5em;
-  background-color: rgb(18, 229, 50);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  margin: 0;
+/* Reusable component classes */
+@layer components {
+  /* Primary gradient button */
+  .btn-primary {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-400 text-white font-semibold
+           rounded-xl px-7 py-3 shadow-md transition-all duration-200
+           hover:from-teal-400 hover:to-emerald-500 hover:shadow-lg
+           hover:-translate-y-0.5 hover:scale-[1.04]
+           disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:transform-none;
+  }
+
+  /* Secondary/blue gradient button */
+  .btn-secondary {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold
+           rounded-xl px-6 py-2.5 shadow-md transition-all duration-200
+           hover:from-teal-500 hover:to-emerald-500 hover:shadow-lg
+           hover:-translate-y-0.5 hover:scale-[1.04];
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-500 to-orange-400 text-white font-semibold
+           rounded-lg px-5 py-2 shadow-md transition-all duration-200
+           hover:from-orange-400 hover:to-red-500 hover:shadow-lg
+           hover:-translate-y-0.5 hover:scale-[1.04];
+  }
+
+  /* Ghost/back button */
+  .btn-ghost {
+    @apply bg-gray-100 text-gray-700 font-semibold rounded-lg px-4 py-2
+           shadow-sm transition-all duration-200
+           hover:bg-gray-200 hover:shadow-md hover:-translate-y-0.5;
+  }
+
+  /* Standard card */
+  .card {
+    @apply bg-white rounded-xl shadow-md border border-gray-100 p-6
+           transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  /* Clickable card */
+  .card-clickable {
+    @apply bg-white rounded-xl shadow-md border border-gray-100 p-6
+           transition-all duration-300 hover:shadow-xl hover:-translate-y-1
+           hover:border-emerald-400 cursor-pointer;
+  }
+
+  /* Analytics summary card */
+  .card-stat {
+    @apply flex flex-col items-center justify-center p-6 rounded-xl
+           shadow-md border border-gray-200 min-h-[120px] text-center
+           transition-all duration-200 hover:scale-[1.04] hover:shadow-xl;
+  }
+
+  /* Input field */
+  .input-field {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base
+           bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-300
+           focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10
+           focus:-translate-y-0.5 placeholder:text-gray-400;
+  }
+
+  /* Page container */
+  .page-container {
+    @apply max-w-[1400px] w-full mx-auto px-6 py-8;
+  }
+
+  /* Section title */
+  .section-title {
+    @apply text-2xl font-bold text-gray-800 mb-6;
+  }
+
+  /* Error message */
+  .error-msg {
+    @apply bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4;
+  }
+
+  /* Success message */
+  .success-msg {
+    @apply bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4;
+  }
 }
 
-.login-prompt{
-  font-size: 2.5em;
-  background-color: rgb(229, 18, 18);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  margin: 0;
+/* Custom utilities */
+@layer utilities {
+  /* Balance colors */
+  .text-balance-positive {
+    @apply text-emerald-500;
+  }
+
+  .text-balance-negative {
+    @apply text-red-500;
+  }
+
+  .text-balance-neutral {
+    @apply text-gray-500;
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-slide-out {
+    animation: slideOut 0.3s ease-in-out forwards;
+  }
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Base styles */
+@layer base {
+  body {
+    @apply font-sans text-gray-800 bg-gray-50 antialiased;
+  }
 }

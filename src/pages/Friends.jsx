@@ -11,7 +11,6 @@ import {
 	deleteDoc 
 } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import './stylesheets/friends.css';
 
 const Friends = () => {
 	const [user] = useAuthState(auth); // Get current user
@@ -247,71 +246,75 @@ const Friends = () => {
 	};
 
 	if (!user) {
-		return <div className="login-message">Please log in to view friends.</div>;
+		return <div className="text-center py-5 text-lg text-gray-600">Please log in to view friends.</div>;
 	}
 
 	if (loading) {
-		return <div className="loading-message">Loading friends...</div>;
+		return <div className="text-center py-5 text-lg text-gray-600">Loading friends...</div>;
 	}
 
 	return (
-		<div className="friends-container">
-			<h2 className="friends-title">Friends</h2>
+		<div className="page-container">
+			<h2 className="section-title">Friends</h2>
 
-			{error && <div className="error-message">{error}</div>}
+			{error && <div className="error-msg">{error}</div>}
             
 			{/* Add Friend Section */}
-			<div className="add-friend-section">
-				<h3 className="add-friend-title">Add Friend</h3>
-				<input
-					type="email"
-					placeholder="Enter friend's email"
-					value={searchEmail}
-					onChange={(e) => setSearchEmail(e.target.value)}
-					className="email-input"
-				/>
-				<button onClick={sendFriendRequest} className="send-request-btn">
-					Send Friend Request
-				</button>
+			<div className="border border-gray-300 my-5 p-5 rounded-lg bg-gray-50">
+				<h3 className="mb-4 text-gray-800 font-semibold text-lg">Add Friend</h3>
+				<div className="flex flex-wrap gap-2">
+					<input
+						type="email"
+						placeholder="Enter friend's email"
+						value={searchEmail}
+						onChange={(e) => setSearchEmail(e.target.value)}
+						className="w-[300px] max-sm:w-full input-field"
+					/>
+					<button onClick={sendFriendRequest} className="btn-secondary">
+						Send Friend Request
+					</button>
+				</div>
 			</div>
 
 			{/* Pending Requests (TO you) */}
 			{pendingRequests.length > 0 && (
-				<div className="pending-requests-section">
-					<h3 className="pending-requests-title">
+				<div className="border-2 border-orange-400 my-5 p-5 rounded-lg bg-orange-50">
+					<h3 className="mb-4 text-orange-700 font-semibold text-lg">
 						Friend Requests ({pendingRequests.length})
 					</h3>
 					{pendingRequests.map(request => (
-						<div key={request.id} className="pending-request-item">
-							<div className="profile-info">
+						<div key={request.id} className="my-2.5 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+							<div className="flex items-center gap-2.5 mb-2.5">
 								{request.senderProfile?.profilePicture && (
 									<img 
 										src={request.senderProfile.profilePicture} 
 										alt="Profile" 
-										className="profile-picture"
+										className="w-10 h-10 rounded-full object-cover border-2 border-gray-300"
 									/>
 								)}
-								<div className="profile-details">
-									<div className="display-name">
+								<div className="flex-1">
+									<div className="font-bold text-lg text-gray-800 mb-0.5">
 										{request.senderProfile?.displayName || request.user1}
 									</div>
 									{request.senderProfile?.displayName && (
-										<div className="email-address">
+										<div className="text-sm text-gray-600">
 											{request.user1}
 										</div>
 									)}
 								</div>
 							</div>
-							<div className="request-actions">
+							<div className="mt-2.5">
 								<button 
 									onClick={() => acceptFriendRequest(request.id)}
-									className="accept-btn"
+									className="m-1 px-4 py-2 bg-emerald-500 text-white border-none rounded
+									         font-medium transition-colors hover:bg-emerald-600"
 								>
 									Accept
 								</button>
 								<button 
 									onClick={() => rejectFriendRequest(request.id)}
-									className="reject-btn"
+									className="m-1 px-4 py-2 bg-red-500 text-white border-none rounded
+									         font-medium transition-colors hover:bg-red-600"
 								>
 									Reject
 								</button>
@@ -323,16 +326,18 @@ const Friends = () => {
 
 			{/* Sent Requests (FROM you) */}
 			{sentRequests.length > 0 && (
-				<div className="sent-requests-section">
-					<h3 className="sent-requests-title">
+				<div className="border-2 border-blue-500 my-5 p-5 rounded-lg bg-blue-50">
+					<h3 className="mb-4 text-blue-700 font-semibold text-lg">
 						Sent Requests ({sentRequests.length})
 					</h3>
 					{sentRequests.map(request => (
-						<div key={request.id} className="sent-request-item">
-							Request sent to <strong>{request.user2}</strong> (Pending)
+						<div key={request.id} className="my-2.5 p-4 bg-sky-100 border border-blue-200 rounded-lg
+						                                     flex items-center justify-between flex-wrap gap-2">
+							<span>Request sent to <strong>{request.user2}</strong> (Pending)</span>
 							<button 
 								onClick={() => rejectFriendRequest(request.id)}
-								className="cancel-btn"
+								className="m-1 px-4 py-2 bg-gray-500 text-white border-none rounded
+								         font-medium transition-colors hover:bg-gray-600"
 							>
 								Cancel Request
 							</button>
@@ -342,29 +347,41 @@ const Friends = () => {
 			)}
 
 			{/* Friends List */}
-			<div className="friends-list-outer">
-				<h3 className="friends-list-title">My Friends ({friends.length})</h3>
-				<div className="friends-list-section">
+			<div className="max-w-[1200px] mx-auto my-0 p-0 flex flex-col items-start">
+				<h3 className="mb-14 text-gray-800 text-lg font-bold text-left -ml-2.5 mt-4.5 relative left-0 z-[2]">
+					My Friends ({friends.length})
+				</h3>
+				<div className="mt-3 mb-0 grid grid-cols-1 gap-8 justify-items-center items-stretch w-full
+				                sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
 					{friends.length === 0 ? (
-						<p className="no-friends-message">
+						<p className="text-center py-10 text-gray-600 italic col-span-full">
 							No friends yet. Add some friends to start splitting expenses!
 						</p>
 					) : (
 						friends.map(friend => (
-							<div key={friend.id} className="friend-card-redesign">
-								<div className="friend-card-avatar-section">
-									<div className="friend-card-avatar placeholder">
+							<div key={friend.id} className="card-clickable flex flex-col items-center justify-between min-h-[240px]
+							                                  w-full max-w-[260px]">
+								<div className="flex flex-col items-center mb-3 w-full">
+									<div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600
+									              flex items-center justify-center text-white text-3xl font-bold
+									              shadow-lg border-4 border-white mb-3 uppercase">
 										{friend.friendProfile?.displayName ? friend.friendProfile.displayName[0].toUpperCase() : friend.friendEmail[0].toUpperCase()}
 									</div>
 								</div>
-								<div className="friend-card-main-info">
-									<div className="friend-card-name">{friend.friendProfile?.displayName || friend.friendEmail}</div>
-									<div className="friend-card-email">{friend.friendEmail}</div>
-									<div className="friend-card-since">Friends since: {friend.acceptedAt?.toDate?.().toLocaleDateString() || 'Recently'}</div>
+								<div className="flex-1 flex flex-col items-center justify-center text-center w-full px-2">
+									<div className="font-bold text-xl text-gray-800 mb-1 break-words w-full">
+										{friend.friendProfile?.displayName || friend.friendEmail}
+									</div>
+									<div className="text-sm text-gray-600 mb-2 break-all w-full">
+										{friend.friendEmail}
+									</div>
+									<div className="text-xs text-gray-500 mt-1">
+										Friends since: {friend.acceptedAt?.toDate?.().toLocaleDateString() || 'Recently'}
+									</div>
 								</div>
 								<button 
 									onClick={() => removeFriend(friend.id)}
-									className="remove-friend-btn friend-card-remove-btn"
+									className="mt-4 btn-danger text-sm"
 								>
 									Remove Friend
 								</button>

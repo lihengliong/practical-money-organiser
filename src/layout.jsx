@@ -6,7 +6,7 @@ export const Layout = () => {
   return (
     <>
       <Header />
-      <main style={{ padding: '20px' }}>
+      <main className="px-5 py-6 min-h-screen">
         <Outlet />
       </main>
       <Footer />

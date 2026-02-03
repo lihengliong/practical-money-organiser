@@ -4,7 +4,6 @@ import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from 'fireb
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Select from 'react-select';
-import './stylesheets/group-expenses.css';
 import { fetchExchangeRates } from '../utils/currency';
 import CurrencySelector from '../components/CurrencySelector';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -589,11 +588,11 @@ const GroupExpenses = () => {
   const earliestPaymentDate = payments.length > 0 ? new Date(Math.min(...payments.map(p => (p.paymentDate?.toDate ? p.paymentDate.toDate() : new Date(p.paymentDate)).getTime()))) : null;
 
   return (
-    <div className="group-expenses-container">
+    <div className="page-container">
       {/* Base currency selector */}
               <CurrencySelector />
       {/* Header */}
-      <div className="group-expenses-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
         <div>
           <h1>{group.name}</h1>
           <p>{group.memberProfiles?.length || group.members.length} members: {
@@ -605,13 +604,12 @@ const GroupExpenses = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10 }}>
               <button
                 onClick={() => navigate('/group-analytics', { state: { group } })}
-                className="view-analytics-btn"
+                className="btn-primary text-sm py-2 px-5 mb-0"
               >
                 View Analytics
               </button>
               <button
-                className="delete-group-btn"
-                style={{ marginBottom: 0, color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '8px 20px', cursor: 'pointer', fontWeight: 600 }}
+                className="btn-danger text-sm py-2 px-5 mb-0"
                 onClick={deleteGroup}
               >
                 Delete Group
@@ -619,23 +617,23 @@ const GroupExpenses = () => {
             </div>
           )}
         </div>
-        <button onClick={() => navigate('/groups')} className="back-button" style={{ alignSelf: 'flex-start', marginTop: 0 }}>
+        <button onClick={() => navigate('/groups')} className="btn-ghost" style={{ alignSelf: 'flex-start', marginTop: 0 }}>
           ← Back to Groups
         </button>
       </div>
 
       {/* Add Expense Form */}
-      <div className="add-expense-form">
-        <h2>Add New Expense</h2>
+      <div className="card mt-8 mb-7 gap-2">
+        <h2 className="section-title">Add New Expense</h2>
         
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-msg">{error}</div>}
 
         {/* Split Type Selector */}
-        <div className="split-type-selector">                                              
+        <div className="flex gap-3 mb-2.5">                                              
           {SPLIT_TYPES.map(type => (
             <button
               key={type.key}
-              className={splitType === type.key ? 'active' : ''}
+              className={splitType === type.key ? 'bg-gradient-to-r from-green-400 to-cyan-400 text-white border-0 rounded-[22px] px-7 py-2.5 text-lg font-semibold cursor-pointer transition-[background,color,box-shadow] duration-[0.18s] shadow-[0_4px_16px_rgba(183,228,199,0.67)]' : 'bg-gray-100 text-gray-800 border-0 rounded-[22px] px-7 py-2.5 text-lg font-semibold cursor-pointer transition-[background,color,box-shadow] duration-[0.18s] shadow-[0_1px_4px_rgba(183,228,199,0.67)] hover:bg-gray-200 hover:text-gray-900'}
               onClick={() => setSplitType(type.key)}
             >{type.label}</button>
           ))}
@@ -653,19 +651,19 @@ const GroupExpenses = () => {
           )}
         </div>
 
-        <div className="expense-form-grid">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2.5 items-end mb-1.5 md:grid-cols-1">
           <input
             type="text"
             placeholder="What was this expense for?"
             value={newExpense.description}
             onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
-            className="form-input"
+            className="input-field"
           />
           {/* Currency selector */}
           <select
             value={newExpense.currency}
             onChange={e => setNewExpense({ ...newExpense, currency: e.target.value })}
-            className="form-input"
+            className="input-field"
           >
             {currencyOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -685,14 +683,14 @@ const GroupExpenses = () => {
             }}
             step="0.01"
             min="0"
-            className="form-input"
+            className="input-field"
             required
           />
           {/* Category selector */}
           <select
             value={newExpense.category}
             onChange={e => setNewExpense({ ...newExpense, category: e.target.value })}
-            className="form-input"
+            className="input-field"
           >
             {categoryOptions.map(opt => (
               <option key={opt} value={opt}>{opt}</option>
@@ -701,7 +699,7 @@ const GroupExpenses = () => {
           <select
             value={newExpense.paidBy}
             onChange={(e) => setNewExpense({...newExpense, paidBy: e.target.value})}
-            className="form-input"
+            className="input-field"
           >
             <option value="">Who paid?</option>
             {group.members.map(member => (
@@ -725,22 +723,22 @@ const GroupExpenses = () => {
                 : newExpense.participants.includes('ALL')
             }
             placeholder="Who's involved?"
-            className="form-input"
+            className="input-field"
             classNamePrefix="react-select"
           />
         </div>
 
         {/* Improved Split Table UI */}
         {(splitType === 'percent' || splitType === 'exact' || splitType === 'equal') && involved.length > 0 && (
-          <div className="split-table-container">
-            <table className="split-table">
+          <div className="mt-2.5 bg-white rounded-xl shadow-[0_1px_6px_rgba(183,228,199,0.2)] p-2.5 px-2 pb-1">
+            <table className="w-full border-collapse bg-slate-50/60 mb-2.5">
               <thead>
                 <tr>
-                  <th>Member</th>
-                  {splitType === 'percent' && <th>Percent</th>}
-                  {splitType === 'exact' && <th>Amount</th>}
-                  {splitType === 'equal' && <th>Share</th>}
-                  <th>Calculated</th>
+                  <th className="bg-green-100/60 text-green-700 font-bold rounded-lg rounded-b-none p-2.5 px-3 text-lg">Member</th>
+                  {splitType === 'percent' && <th className="bg-green-100/60 text-green-700 font-bold rounded-lg rounded-b-none p-2.5 px-3 text-lg">Percent</th>}
+                  {splitType === 'exact' && <th className="bg-green-100/60 text-green-700 font-bold rounded-lg rounded-b-none p-2.5 px-3 text-lg">Amount</th>}
+                  {splitType === 'equal' && <th className="bg-green-100/60 text-green-700 font-bold rounded-lg rounded-b-none p-2.5 px-3 text-lg">Share</th>}
+                  <th className="bg-green-100/60 text-green-700 font-bold rounded-lg rounded-b-none p-2.5 px-3 text-lg">Calculated</th>
                 </tr>
               </thead>
               <tbody>
@@ -776,10 +774,10 @@ const GroupExpenses = () => {
                     }
                   }
                   return (
-                    <tr key={m} className={error ? 'split-error-row' : ''}>
-                      <td>{memberDisplay(m, false)}</td>
+                    <tr key={m} className={error ? 'bg-red-50' : ''}>
+                      <td className="p-2.5 px-3 text-lg">{memberDisplay(m, false)}</td>
                       {splitType === 'percent' && (
-                        <td>
+                        <td className="p-2.5 px-3 text-lg">
                           <input
                             type="range"
                             min="0"
@@ -790,7 +788,7 @@ const GroupExpenses = () => {
                               ...newExpense,
                               percentSplits: { ...newExpense.percentSplits, [m]: e.target.value }
                             })}
-                            className="split-slider"
+                            className="w-20 mr-2 align-middle"
                           />
                           <input
                             type="number"
@@ -802,12 +800,12 @@ const GroupExpenses = () => {
                               ...newExpense,
                               percentSplits: { ...newExpense.percentSplits, [m]: e.target.value }
                             })}
-                            className="split-input"
+                            className="w-[60px] p-1.5 border border-gray-300 rounded text-base text-right"
                           />%
                         </td>
                       )}
                       {splitType === 'exact' && (
-                        <td>
+                        <td className="p-2.5 px-3 text-lg">
                           <input
                             type="number"
                             min="0"
@@ -824,28 +822,28 @@ const GroupExpenses = () => {
                                 exactSplits: { ...newExpense.exactSplits, [m]: value }
                               });
                             }}
-                            className="split-input"
+                            className="w-[60px] p-1.5 border border-gray-300 rounded text-base text-right"
                           />
                         </td>
                       )}
                       {splitType === 'equal' && (
-                        <td>
+                        <td className="p-2.5 px-3 text-lg">
                           {amount > 0 ? `$${calculated.toFixed(2)}` : '-'}
                         </td>
                       )}
-                      <td>${calculated.toFixed(2)}</td>
+                      <td className="p-2.5 px-3 text-lg">${calculated.toFixed(2)}</td>
                     </tr>
                   );
                 })}
               </tbody>
               {/* Summary Row */}
               <tfoot>
-                <tr className="split-summary-row">
-                  <td><strong>Total</strong></td>
-                  {splitType === 'percent' && <td>{involved.reduce((sum, m) => sum + (parseFloat(newExpense.percentSplits[m]) || 0), 0)}%</td>}
-                  {splitType === 'exact' && <td>${involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0).toFixed(2)}</td>}
-                  {splitType === 'equal' && <td>-</td>}
-                  <td>
+                <tr className="font-bold text-gray-900 bg-slate-50 rounded-b-lg rounded-t-none">
+                  <td className="p-2.5 px-3 text-lg"><strong>Total</strong></td>
+                  {splitType === 'percent' && <td className="p-2.5 px-3 text-lg">{involved.reduce((sum, m) => sum + (parseFloat(newExpense.percentSplits[m]) || 0), 0)}%</td>}
+                  {splitType === 'exact' && <td className="p-2.5 px-3 text-lg">${involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0).toFixed(2)}</td>}
+                  {splitType === 'equal' && <td className="p-2.5 px-3 text-lg">-</td>}
+                  <td className="p-2.5 px-3 text-lg">
                     {splitType === 'percent' && `$${involved.reduce((sum, m) => sum + ((parseFloat(newExpense.percentSplits[m]) || 0) / 100 * (parseFloat(newExpense.amount) || 0)), 0).toFixed(2)}`}
                     {splitType === 'exact' && `$${involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0).toFixed(2)}`}
                     {splitType === 'equal' && `$${(parseFloat(newExpense.amount) || 0).toFixed(2)}`}
@@ -856,22 +854,22 @@ const GroupExpenses = () => {
           </div>
         )}
 
-        <button onClick={addExpense} className="add-expense-btn">
+        <button onClick={addExpense} className="btn-primary mt-1.5 self-end">
           Add Expense
         </button>
       </div>
 
       {!hasExpenses ? (
-        <div className="welcome-screen">
-          <h2>Ready to track expenses!</h2>
-          <p>Add your first expense above to get started with {group.name}.</p>
+        <div className="text-center py-[60px] px-5 bg-gray-50 rounded-[10px] border border-gray-200">
+          <h2 className="text-gray-500 mb-4">Ready to track expenses!</h2>
+          <p className="text-gray-500 text-lg">Add your first expense above to get started with {group.name}.</p>
         </div>
       ) : (
-        <div className="main-content-grid">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-1 md:gap-5">
           {/* Balances */}
-          <div className="balances-section">
-            <h2>Current Balances</h2>
-            <div className="balances-container">
+          <div>
+            <h2 className="section-title">Current Balances</h2>
+            <div className="card-clickable overflow-hidden">
               {Object.entries(balances).map(([member, balance]) => (
                 <div 
                   key={member} 
@@ -889,26 +887,26 @@ const GroupExpenses = () => {
             </div>
 
             {/* Quick Settle Up */}
-            <div className="settle-up-section settle-up-modern">
-              <div className="settle-up-header-row">
-                <h3>Quick Settle Up</h3>
-                <button className="nudge-btn" onClick={handleNudgeAll} disabled={nudgeLoading}>
+            <div className="card mt-8 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="section-title m-0">Quick Settle Up</h3>
+                <button className="bg-green-600 text-white border-0 rounded-md px-5 py-2 text-lg font-semibold cursor-pointer shadow-[0_1px_4px_rgba(183,228,199,0.67)] transition-[background,box-shadow] duration-[0.18s] disabled:bg-green-200 disabled:text-white disabled:cursor-not-allowed hover:not(:disabled):bg-green-700 hover:not(:disabled):shadow-[0_4px_16px_rgba(183,228,199,0.67)]" onClick={handleNudgeAll} disabled={nudgeLoading}>
                   {nudgeLoading ? 'Nudging...' : 'Nudge All'}
                 </button>
               </div>
               {getMinimalSettleUp(balances).length === 0 ? (
-                <div className="all-settled">
+                <div className="p-5 bg-green-100 rounded-md text-center border border-green-200">
                   All settled up! No one owes money.
                 </div>
               ) : (
                 getMinimalSettleUp(balances).map(({ from, to, amount }) => (
-                  <div key={from + to} className="settle-up-item modern-settle-up-item">
+                  <div key={from + to} className="bg-white border border-gray-200 rounded-[10px] my-3 px-5 py-4 flex items-center justify-between shadow-[0_1px_6px_rgba(60,120,80,0.04)] text-lg">
                     <span>
                       <strong>{memberDisplay(from, false)}</strong> owes ${amount.toFixed(2)} to <strong>{memberDisplay(to, false)}</strong>
                     </span>
                     <button 
                       onClick={() => recordPayment(from, to, amount)}
-                      className="settle-up-btn"
+                      className="btn-primary ml-5"
                     >
                       Mark as Paid
                     </button>
@@ -919,9 +917,9 @@ const GroupExpenses = () => {
           </div>
 
           {/* Recent Expenses */}
-          <div className="expenses-section">
-            <h2>Recent Expenses</h2>
-            <div className="expenses-list">
+          <div>
+            <h2 className="section-title">Recent Expenses</h2>
+            <div className="max-h-[500px] overflow-y-auto">
               {expenses
                 .slice()
                 .sort((a, b) => {
@@ -944,8 +942,8 @@ const GroupExpenses = () => {
                   convertedAmount = expense.amount * (rateBase / rateExpense);
                 }
                 return (
-                  <div key={expense.id} className="expense-item">
-                    <div className="expense-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0' }}>
+                  <div key={expense.id} className="card-clickable mb-5">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0' }}>
                       {/* Description and payer info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="expense-title" style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{expense.description}</div>
@@ -971,8 +969,7 @@ const GroupExpenses = () => {
                           if (earliestPaymentDate && expenseCreatedAt <= earliestPaymentDate) return null;
                           return (
                             <button
-                              className="delete-expense-btn"
-                              style={{ color: 'white', background: '#dc3545', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer', minWidth: 70 }}
+                              className="btn-danger py-1.5 px-4 text-sm min-w-[70px]"
                               onClick={() => deleteExpense(expense.id)}
                             >
                               Delete
@@ -991,9 +988,9 @@ const GroupExpenses = () => {
 
       {/* Payment History */}
       {payments.length > 0 && (
-        <div className="payment-history">
-          <h2>Payment History</h2>
-          <div className="payment-history-container">
+        <div className="mt-10">
+          <h2 className="section-title">Payment History</h2>
+          <div className="bg-gradient-to-br from-slate-50/60 to-green-100/60 border border-gray-200 rounded-2xl py-8 px-7 shadow-[0_4px_24px_rgba(60,120,80,0.07)] relative overflow-visible before:content-[''] before:absolute before:left-[18px] before:top-6 before:bottom-6 before:w-1 before:bg-gradient-to-b before:from-green-200 before:to-green-600 before:rounded-sm before:opacity-[0.18] before:z-0 sm:py-3 sm:px-1">
             {payments
               .slice()
               .sort((a, b) => {
@@ -1006,16 +1003,16 @@ const GroupExpenses = () => {
                 const toName = memberDisplay(payment.toUser, false);
                 const getInitials = name => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
                 return (
-                  <div key={payment.id} className="payment-item improved-payment-item modern-payment-item">
-                    <span className="payment-avatar modern-avatar" style={{background:'#e3f2fd',color:'#1976d2',border:'2px solid #b7e4c7'}}>{getInitials(fromName)}</span>
-                    <span className="payment-names">
+                  <div key={payment.id} className="flex items-center justify-between bg-gradient-to-br from-slate-50/80 to-green-100/60 shadow-[0_6px_32px_rgba(60,120,80,0.10)] border-[1.5px] border-gray-200 rounded-[18px] relative my-7 pl-8 min-h-[76px] transition-[box-shadow,transform] duration-[0.22s,0.18s] hover:shadow-[0_12px_48px_rgba(60,120,80,0.18)] hover:-translate-y-[3px] hover:scale-[1.018] hover:bg-gradient-to-br hover:from-green-100/60 hover:to-slate-50/60 before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-3.5 before:h-3.5 before:bg-gradient-to-br before:from-green-600/60 before:to-green-200/60 before:rounded-full before:shadow-[0_2px_8px_rgba(183,228,199,0.67)] before:border-[2.5px] before:border-white before:z-[3]">
+                    <span className="w-12 h-12 text-xl rounded-full border-2 border-green-200 mr-5 shadow-[0_2px_8px_rgba(25,118,210,0.10)] bg-white flex items-center justify-center font-bold z-[2]" style={{background:'#e3f2fd',color:'#1976d2',border:'2px solid #b7e4c7'}}>{getInitials(fromName)}</span>
+                    <span className="flex items-center gap-2 text-lg font-medium">
                       <strong style={{color:'#1976d2'}}>{fromName}</strong>
-                      <span className="payment-arrow">→</span>
-                      <span className="payment-avatar modern-avatar" style={{background:'#e8f5e9',color:'#388e3c',marginRight:8,border:'2px solid #b7e4c7'}}>{getInitials(toName)}</span>
+                      <span className="text-green-600 text-xl mx-0 font-bold">→</span>
+                      <span className="w-12 h-12 text-xl rounded-full border-2 border-green-200 mr-2 shadow-[0_2px_8px_rgba(25,118,210,0.10)] bg-white flex items-center justify-center font-bold z-[2]" style={{background:'#e8f5e9',color:'#388e3c',marginRight:8,border:'2px solid #b7e4c7'}}>{getInitials(toName)}</span>
                       <strong style={{color:'#388e3c'}}>{toName}</strong>
                     </span>
-                    <span className="payment-amount modern-amount">${Number(payment.amount).toFixed(2)}</span>
-                    <span className="payment-date modern-date">
+                    <span className="text-[1.22em] text-green-900 font-extrabold ml-8 mr-5 tracking-[0.02em] [text-shadow:0_1px_2px_#e8f5e9]">${Number(payment.amount).toFixed(2)}</span>
+                    <span className="text-gray-400 text-[0.97em] min-w-[90px] text-right ml-auto italic font-normal opacity-85">
                       {payment.paymentDate.toDate?.().toLocaleDateString() || 'Recently'}
                     </span>
                   </div>

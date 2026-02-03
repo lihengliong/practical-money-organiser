@@ -9,7 +9,6 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend
 } from "recharts";
-import '../pages/stylesheets/dashboard.css';
 
 const pieColors = ["#3b82f6", "#10b981", "#f59e42", "#a78bfa", "#f43f5e", "#6366f1", "#fbbf24", "#ef4444"];
 
@@ -218,40 +217,79 @@ const Dashboard = () => {
     );
   }, [pieMode, allExpenses, user, exchangeRates, baseCurrency]);
 
-  if (!user) return <div className="p-8">Please log in to view your ledger.</div>;
-  if (loading) return <div>Loading ledger...</div>;
+  if (!user) return <div className="p-8 text-gray-600">Please log in to view your ledger.</div>;
+  if (loading) return <div className="p-8 text-gray-600">Loading ledger...</div>;
 
   return (
-    <div className="dashboard-analytics-container">
-      <div className="dashboard-welcome">
+    <div className="min-h-screen bg-gray-50 py-8 px-2 box-border">
+      <div className="text-[2.5rem] font-black text-emerald-600 mb-5 -tracking-[1.5px] text-left
+                      mx-auto max-w-[1100px] w-full pl-2
+                      max-sm:text-[30px] sm:pl-0">
         Welcome, {user.displayName ? user.displayName : user.email.split('@')[0]}!
       </div>
-      <div className="dashboard-analytics-summary-wrapper">
-        <div className="dashboard-analytics-summary-grid">
-          <div className="dashboard-analytics-card dashboard-analytics-card-blue">
-            <div className="dashboard-analytics-card-title">Net Balance</div>
-            <div className="dashboard-analytics-card-value dashboard-analytics-card-value-blue"
-              style={{ color: netBalance > 0.009 ? '#10b981' : netBalance < -0.009 ? '#ef4444' : '#64748b' }}>
+      
+      <div className="flex flex-col items-center justify-center mb-10">
+        <div className="w-full max-w-[1100px] grid grid-cols-1 gap-6
+                        sm:grid-cols-2 lg:grid-cols-4">
+          {/* Net Balance Card */}
+          <div className="card-stat bg-gradient-to-br from-blue-50 via-blue-100/80 to-sky-50">
+            <div className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              Net Balance
+            </div>
+            <div className={`text-[2rem] font-extrabold mb-1 leading-tight shadow-sm
+                            max-sm:text-[1.3em]
+                            ${netBalance > 0.009 ? 'text-emerald-500' : netBalance < -0.009 ? 'text-red-500' : 'text-slate-500'}`}>
               {netBalance > 0.009 ? '+' : ''}{Math.abs(netBalance) < 0.01 ? '0.00' : netBalance.toFixed(2)} {baseCurrency}
             </div>
           </div>
-          <div className="dashboard-analytics-card dashboard-analytics-card-green">
-            <div className="dashboard-analytics-card-title">Total Expenses for the Month</div>
-            <div className="dashboard-analytics-card-value dashboard-analytics-card-value-green">${monthlyTotal.toFixed(2)}</div>
+
+          {/* Monthly Total Card */}
+          <div className="card-stat bg-gradient-to-br from-emerald-50 via-green-100/80 to-emerald-50">
+            <div className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              Total Expenses for the Month
+            </div>
+            <div className="text-[2rem] font-extrabold mb-1 leading-tight text-emerald-600 shadow-sm
+                            max-sm:text-[1.3em]">
+              ${monthlyTotal.toFixed(2)}
+            </div>
           </div>
-          <div className="dashboard-analytics-card dashboard-analytics-card-purple">
-            <div className="dashboard-analytics-card-title">Average Monthly Expenses</div>
-            <div className="dashboard-analytics-card-value dashboard-analytics-card-value-purple">${avgYearly.toFixed(2)}</div>
+
+          {/* Average Monthly Card */}
+          <div className="card-stat bg-gradient-to-br from-violet-50 via-purple-100/80 to-violet-50">
+            <div className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              Average Monthly Expenses
+            </div>
+            <div className="text-[2rem] font-extrabold mb-1 leading-tight text-violet-600 shadow-sm
+                            max-sm:text-[1.3em]">
+              ${avgYearly.toFixed(2)}
+            </div>
           </div>
-          <div className="dashboard-analytics-card dashboard-analytics-card-yellow">
-            <div className="dashboard-analytics-card-title">Most Spent Expense Type</div>
-            <div className="dashboard-analytics-card-value dashboard-analytics-card-value-yellow">{mostFreqType}</div>
+
+          {/* Most Spent Type Card */}
+          <div className="card-stat bg-gradient-to-br from-yellow-50 via-amber-100/80 to-yellow-50">
+            <div className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              Most Spent Expense Type
+            </div>
+            <div className="text-[2rem] font-extrabold mb-1 leading-tight text-amber-500 shadow-sm
+                            max-sm:text-[1.3em]">
+              {mostFreqType}
+            </div>
           </div>
         </div>
       </div>
-      <div className="dashboard-charts-row">
-        <div className="dashboard-analytics-chart-card dashboard-analytics-linechart">
-          <div className="dashboard-analytics-chart-title">My Expenses (Last 6 Months)</div>
+
+      {/* Charts Row */}
+      <div className="w-full max-w-[1100px] mx-auto mb-10 grid grid-cols-1 gap-8
+                      lg:grid-cols-2 max-sm:gap-4">
+        {/* Line Chart */}
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 py-10 px-8
+                        flex flex-col items-center min-h-[420px]
+                        transition-shadow duration-200 hover:shadow-xl
+                        max-sm:py-5 max-sm:px-2 max-sm:min-h-[260px]">
+          <div className="font-bold text-xl text-slate-700 mb-6 text-center tracking-tight
+                          max-sm:text-base">
+            My Expenses (Last 6 Months)
+          </div>
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={lineData} margin={{ top: 10, right: 30, left: 0, bottom: 36 }}>
               <defs>
@@ -270,23 +308,44 @@ const Dashboard = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div className="dashboard-analytics-chart-card dashboard-analytics-piechart">
-          <div className="dashboard-analytics-chart-title">Expense Breakdown by Category</div>
-          <div className="dashboard-pie-toggle-row">
-            <span className={pieMode === 'month' ? 'dashboard-pie-toggle-active' : 'dashboard-pie-toggle-inactive'}>This Month</span>
-            <label className="dashboard-pie-toggle-switch">
+
+        {/* Pie Chart */}
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 py-10 px-8
+                        flex flex-col items-center min-h-[420px]
+                        transition-shadow duration-200 hover:shadow-xl
+                        max-sm:py-5 max-sm:px-2 max-sm:min-h-[260px]">
+          <div className="font-bold text-xl text-slate-700 mb-6 text-center tracking-tight
+                          max-sm:text-base">
+            Expense Breakdown by Category
+          </div>
+          
+          {/* Toggle Switch */}
+          <div className="flex items-center gap-2.5 mb-2.5 justify-center">
+            <span className={`text-sm tracking-tight
+                             ${pieMode === 'month' ? 'text-emerald-600 font-semibold' : 'text-slate-500 font-normal'}`}>
+              This Month
+            </span>
+            <label className="relative inline-block w-12 h-[26px] mx-1 align-middle">
               <input
                 type="checkbox"
                 checked={pieMode === 'all'}
                 onChange={() => setPieMode(pieMode === 'month' ? 'all' : 'month')}
+                className="opacity-0 w-0 h-0 peer"
                 aria-label="Toggle between This Month and All Time"
               />
-              <span className="dashboard-pie-toggle-slider">
-                <span className={pieMode === 'all' ? 'dashboard-pie-toggle-knob dashboard-pie-toggle-knob-right' : 'dashboard-pie-toggle-knob'} />
+              <span className="absolute inset-0 bg-slate-300 rounded-full cursor-pointer
+                               peer-checked:bg-emerald-500 transition-colors">
+                <span className={`absolute h-[22px] w-[22px] bottom-0.5 bg-white rounded-full
+                                 shadow-sm transition-all border-[1.5px]
+                                 ${pieMode === 'all' ? 'left-6 border-emerald-500' : 'left-0.5 border-slate-300'}`} />
               </span>
             </label>
-            <span className={pieMode === 'all' ? 'dashboard-pie-toggle-active' : 'dashboard-pie-toggle-inactive'}>All Time</span>
+            <span className={`text-sm tracking-tight
+                             ${pieMode === 'all' ? 'text-emerald-600 font-semibold' : 'text-slate-500 font-normal'}`}>
+              All Time
+            </span>
           </div>
+
           <ResponsiveContainer width="100%" height={320}>
             <PieChart>
               <Pie

@@ -7,7 +7,6 @@ import {
 import { db, auth } from '../config/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import './stylesheets/analytics.css';
 import { fetchExchangeRates } from '../utils/currency';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -264,17 +263,17 @@ export default function GroupAnalytics() {
 
   return (
     <PieModeContext.Provider value={{ pieMode, setPieMode }}>
-      <div className="analytics-container">
+      <div className="min-h-screen bg-slate-50 py-8 px-2 box-border">
         {/* Back button and group header, aligned with stats */}
         <div style={{ maxWidth: 1200, margin: '0 auto', marginBottom: 8 }}>
-          <button onClick={() => navigate(-1)} style={{ background: '#f1f1f1', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 600, cursor: 'pointer', color: '#333', boxShadow: '0 1px 4px #b7e4c7aa', marginBottom: 10 }}>
+          <button onClick={() => navigate(-1)} className="btn-ghost mb-2.5">
             ← Back to Group Expenses
           </button>
           <GroupHeader group={group} />
         </div>
         {/* Centralized Summary Cards Section */}
-        <div className="analytics-summary-wrapper">
-          <div className="analytics-summary-grid">
+        <div className="flex flex-col items-center justify-center mb-10">
+          <div className="w-full max-w-[1100px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Group Total Expenses Card */}
             <div className="analytics-card analytics-card-blue">
               <div className="analytics-card-title">Total Expenses Incurred by Group</div>
@@ -307,16 +306,16 @@ export default function GroupAnalytics() {
           </div>
         </div>
       {/* Charts Section */}
-      <div className="analytics-charts-grid">
-        <div className="analytics-chart-card">
-          <div className="analytics-chart-title">Group Expenses (Last 6 Months)</div>
-          <div className="analytics-chart-inner">
+      <div className="w-full max-w-[1100px] mx-auto mb-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="card p-10 px-8 flex flex-col items-center mb-0 min-h-[420px] transition-shadow duration-200 hover:shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] sm:p-5 sm:px-2 sm:min-h-[260px]">
+          <div className="font-['Inter','Segoe_UI',Arial,sans-serif] text-xl font-bold text-slate-700 mb-6 text-center tracking-[0.01em]">Group Expenses (Last 6 Months)</div>
+          <div className="w-full h-[340px] flex items-center justify-center sm:h-[220px] sm:p-0">
             <ExpensesLineChart data={lineData} baseCurrency={baseCurrency} />
           </div>
         </div>
         <ExpenseBreakdownByCategory allExpenses={allExpenses} />
       </div>
-      <div className="analytics-chart-card analytics-chart-card-full">
+      <div className="card p-10 px-8 flex flex-col items-center mb-10 min-h-[420px] transition-shadow duration-200 hover:shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] max-w-[1100px] mx-auto w-full sm:p-5 sm:px-2 sm:min-h-[260px]">
         <div className="analytics-chart-title">Member Contributions</div>
         <div className="analytics-chart-inner">
           <ContributionsBarChart data={barData} />
@@ -428,8 +427,8 @@ function ExpenseBreakdownByCategory({ allExpenses }) {
     setPieData(Object.entries(catAgg).map(([name, value]) => ({ name, value })));
   }, [allExpenses, pieMode, baseCurrency, exchangeRates]);
   return (
-    <div className="analytics-chart-card">
-      <div className="analytics-chart-title">Expense Breakdown by Category</div>
+    <div className="card p-10 px-8 flex flex-col items-center mb-0 min-h-[420px] transition-shadow duration-200 hover:shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] sm:p-5 sm:px-2 sm:min-h-[260px]">
+      <div className="font-['Inter','Segoe_UI',Arial,sans-serif] text-xl font-bold text-slate-700 mb-6 text-center tracking-[0.01em]">Expense Breakdown by Category</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, justifyContent: 'center' }}>
         <span style={{ fontSize: '0.89em', color: pieMode === 'month' ? '#2563eb' : '#64748b', fontWeight: pieMode === 'month' ? 600 : 400, letterSpacing: '0.01em' }}>This Month</span>
         <label className="pie-toggle-switch" style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, margin: '0 4px', verticalAlign: 'middle' }}>
@@ -467,7 +466,7 @@ function ExpenseBreakdownByCategory({ allExpenses }) {
         </label>
         <span style={{ fontSize: '0.89em', color: pieMode === 'all' ? '#2563eb' : '#64748b', fontWeight: pieMode === 'all' ? 600 : 400, letterSpacing: '0.01em' }}>All Time</span>
       </div>
-      <div className="analytics-chart-inner">
+      <div className="w-full h-[340px] flex items-center justify-center sm:h-[220px] sm:p-0">
         <CategoryPieChart data={pieData} />
       </div>
     </div>
