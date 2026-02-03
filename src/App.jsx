@@ -1,5 +1,5 @@
 import './App.css'
-import { Auth } from './components/auth'
+import { Auth } from './components/Auth'
 import Friends from './pages/Friends'
 import Groups from './pages/Groups'
 import GroupExpenses from './pages/Activities'
@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile';
 import GroupAnalytics from './pages/GroupAnalytics';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Layout } from './layout'
+import { Layout } from './Layout'
 import { CurrencyProvider } from './contexts/CurrencyContext'
 
 function App() {
