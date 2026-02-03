@@ -1,8 +1,8 @@
-import { auth, googleProvider } from "../config/firebase";
+import { auth, googleProvider } from "../config/firebase.js";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { db } from "../config/firebase";
+import { db } from "../config/firebase.js";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
 export const Auth = () => {

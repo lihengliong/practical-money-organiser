@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../config/firebase';
+import { auth, db } from '../config/firebase.js';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Select from 'react-select';
-import { fetchExchangeRates } from '../utils/currency';
-import CurrencySelector from '../components/CurrencySelector';
-import { useCurrency } from '../contexts/CurrencyContext';
+import { fetchExchangeRates } from '../utils/currency.js';
+import CurrencySelector from '../components/CurrencySelector.jsx';
+import { useCurrency } from '../contexts/CurrencyContext.jsx';
 
 const SPLIT_TYPES = [ 
   { key: 'equal',   label: 'Equal Splits' },

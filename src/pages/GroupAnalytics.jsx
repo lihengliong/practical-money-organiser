@@ -4,12 +4,12 @@ import {
   PieChart, Pie, Cell, Legend,
   BarChart, Bar
 } from "recharts";
-import { db, auth } from '../config/firebase';
+import { db, auth } from '../config/firebase.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { fetchExchangeRates } from '../utils/currency';
+import { fetchExchangeRates } from '../utils/currency.js';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useCurrency } from '../contexts/CurrencyContext';
+import { useCurrency } from '../contexts/CurrencyContext.jsx';
 
 const pieColors = ["#3b82f6", "#10b981", "#f59e42", "#a78bfa", "#f43f5e", "#6366f1", "#fbbf24", "#ef4444"];
 

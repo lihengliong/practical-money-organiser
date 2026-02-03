@@ -1,12 +1,12 @@
 import { signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../config/firebase";
+import { auth } from "../config/firebase.js";
 import { useNavigate } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import { MdNotificationsNone } from 'react-icons/md';
-import NotificationsSidebar from './NotificationsSidebar';
-import CurrencySelector from './CurrencySelector';
-import { db } from '../config/firebase';
+import NotificationsSidebar from './NotificationsSidebar.jsx';
+import CurrencySelector from './CurrencySelector.jsx';
+import { db } from '../config/firebase.js';
 import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 
 const Header = () => {

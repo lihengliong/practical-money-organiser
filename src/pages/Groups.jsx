@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { db, auth } from '../config/firebase';
+import { db, auth } from '../config/firebase.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
-import { fetchExchangeRates } from '../utils/currency';
-import { useCurrency } from '../contexts/CurrencyContext';
+import { fetchExchangeRates } from '../utils/currency.js';
+import { useCurrency } from '../contexts/CurrencyContext.jsx';
 
 function Groups() {
     const [groups, setGroups] = useState([]);

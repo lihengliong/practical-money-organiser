@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { db, auth } from '../config/firebase';
+import { db, auth } from '../config/firebase.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { fetchExchangeRates } from '../utils/currency';
-import CurrencySelector from '../components/CurrencySelector';
-import { useCurrency } from '../contexts/CurrencyContext';
+import { fetchExchangeRates } from '../utils/currency.js';
+import CurrencySelector from '../components/CurrencySelector.jsx';
+import { useCurrency } from '../contexts/CurrencyContext.jsx';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend

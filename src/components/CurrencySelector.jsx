@@ -1,4 +1,4 @@
-import { useCurrency } from '../contexts/CurrencyContext';
+import { useCurrency } from '../contexts/CurrencyContext.jsx';
 
 const currencyOptions = [
   { value: 'DEFAULT', label: 'Original' },
