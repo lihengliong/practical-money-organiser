@@ -1,14 +1,14 @@
 import { Auth } from './components/Auth.jsx'
-import Friends from './pages/Friends'
-import Groups from './pages/Groups'
-import GroupExpenses from './pages/Activities'
-import GroupCreate from './pages/GroupCreate'
-import Dashboard from './pages/Dashboard'
-import Profile from './pages/Profile';
-import GroupAnalytics from './pages/GroupAnalytics';
+import Friends from './pages/Friends.jsx'
+import Groups from './pages/Groups.jsx'
+import GroupExpenses from './pages/Activities.jsx'
+import GroupCreate from './pages/GroupCreate.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import Profile from './pages/Profile.jsx';
+import GroupAnalytics from './pages/GroupAnalytics.jsx';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Layout } from './Layout'
-import { CurrencyProvider } from './contexts/CurrencyContext'
+import { Layout } from './Layout.jsx'
+import { CurrencyProvider } from './contexts/CurrencyContext.jsx'
 
 function App() {
   return (
