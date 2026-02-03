@@ -1,4 +1,4 @@
-import { Auth } from './components/Auth'
+import { Auth } from './components/Auth.jsx'
 import Friends from './pages/Friends'
 import Groups from './pages/Groups'
 import GroupExpenses from './pages/Activities'
