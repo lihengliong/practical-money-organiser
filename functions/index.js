@@ -28,7 +28,7 @@ const functions = getFunctions(app);
 
 const createUser = httpsCallable(functions, "createUser");
 
-async function handleSignup(formData) {
+export async function handleSignup(formData) {
   try {
     const result = await createUser(formData);
     if (result.data.status === 1) {

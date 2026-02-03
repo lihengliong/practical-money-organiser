@@ -20,7 +20,6 @@ const Dashboard = () => {
   const { baseCurrency } = useCurrency();
   const [exchangeRates, setExchangeRates] = useState({ SGD: 1 });
   const [allExpenses, setAllExpenses] = useState([]);
-  const [allPayments, setAllPayments] = useState([]);
   const [pieData, setPieData] = useState([]);
   const [lineData, setLineData] = useState([]);
   const [pieMode, setPieMode] = useState('month');
@@ -28,7 +27,6 @@ const Dashboard = () => {
   const [monthlyTotal, setMonthlyTotal] = useState(0);
   const [avgYearly, setAvgYearly] = useState(0);
   const [mostFreqType, setMostFreqType] = useState('-');
-  const now = new Date();
 
   useEffect(() => {
     const fetchRates = async () => {
@@ -59,7 +57,6 @@ const Dashboard = () => {
         allPaymentsArr = allPaymentsArr.concat(paymentsSnapshot.docs.map(doc => ({ ...doc.data(), group })));
       }
       setAllExpenses(allExpensesArr);
-      setAllPayments(allPaymentsArr);
       // --- Summary Calculations ---
       const base = baseCurrency.toUpperCase();
       const rateBase = exchangeRates[base];

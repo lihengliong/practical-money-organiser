@@ -124,6 +124,7 @@ const GroupExpenses = () => {
 
     console.log('Starting data fetch...');
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group, user]);
 
   // Fetch exchange rates when baseCurrency changes

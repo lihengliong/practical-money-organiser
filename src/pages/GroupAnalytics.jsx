@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend,
@@ -8,7 +8,6 @@ import { db, auth } from '../config/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import './stylesheets/analytics.css';
-import CurrencySelector from '../components/CurrencySelector';
 import { fetchExchangeRates } from '../utils/currency';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -75,7 +74,7 @@ function CategoryPieChart({ data }) {
           cy="50%"
           outerRadius={80}
         >
-          {data.map((entry, idx) => (
+          {data.map((_, idx) => (
             <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} />
           ))}
         </Pie>
@@ -101,6 +100,7 @@ function ContributionsBarChart({ data }) {
 }
 
 const PieModeContext = createContext();
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePieMode() {
   return useContext(PieModeContext);
 }
@@ -118,7 +118,7 @@ function GroupHeader({ group }) {
     <div style={{ maxWidth: 1200, margin: '0 auto', marginBottom: 18, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
       <div style={{ fontSize: 48, fontWeight: 900, color: '#2563eb', marginBottom: 8, letterSpacing: '-1.5px' }}>{group?.name || 'Group'}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        {members.map((m, idx) => (
+        {members.map((m) => (
           <span key={m.email || m} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#e6f4ea', borderRadius: 16, padding: '3px 12px', fontSize: 16, fontWeight: 500, color: '#388e3c', marginRight: 4 }}>
             <span style={{ background: '#fff', color: '#388e3c', borderRadius: '50%', width: 26, height: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, marginRight: 4, boxShadow: '0 1px 4px #b7e4c7aa' }}>{getInitials(m.displayName || m.email || m)}</span>
             {m.displayName || m.email || m}
@@ -254,21 +254,13 @@ export default function GroupAnalytics() {
       setAllExpenses(allExpensesArr);
       setLoading(false);
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, baseCurrency, exchangeRates, group]);
 
   const [summary, setSummary] = useState({ totalThisMonth: 0, totalGroupExpenses: 0, myContributions: 0, net: 0, mostFrequentPayer: '-' });
 
   if (!user) return <div className="p-8">Please log in to view analytics.</div>;
   if (loading) return <div className="p-8">Loading analytics...</div>;
-
-  // Helper for member initials
-  const getInitials = (nameOrEmail) => {
-    if (!nameOrEmail) return '';
-    const parts = nameOrEmail.split(/[@.\s]/).filter(Boolean);
-    return parts.length === 1 ? parts[0][0].toUpperCase() : (parts[0][0] + parts[1][0]).toUpperCase();
-  };
-  // Get member list (with fallback)
-  const members = group?.memberProfiles || (group?.members ? group.members.map(email => ({ email, displayName: email })) : []);
 
   return (
     <PieModeContext.Provider value={{ pieMode, setPieMode }}>

@@ -26,6 +26,7 @@ const Friends = () => {
 		if (user) {
 			fetchFriendData();
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [user]);
 
 	// Fetch user profile information by email

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { auth, db } from '../config/firebase';
 import { updatePassword, updateProfile } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -16,10 +16,7 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [savingName, setSavingName] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(user?.photoURL || '');
-  const [uploading, setUploading] = useState(false);
   const [desc, setDesc] = useState(user?.desc || DEFAULT_DESC);
-  const fileInputRef = useRef();
 
   const handleChangePassword = async () => {
     setMessage('');
@@ -61,26 +58,6 @@ const Profile = () => {
       console.error('Profile update error:', err);
     } finally {
       setSavingName(false);
-    }
-  };
-
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    setMessage('');
-    setError('');
-    try {
-      // For demo: use a local URL. In production, upload to storage and get a URL.
-      const url = URL.createObjectURL(file);
-      setAvatarUrl(url);
-      await updateProfile(auth.currentUser, { photoURL: url });
-      await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
-      setMessage('Profile picture updated!');
-    } catch (err) {
-      setError('Failed to update profile picture.');
-    } finally {
-      setUploading(false);
     }
   };
 

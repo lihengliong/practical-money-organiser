@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './stylesheets/notifications-sidebar.css';
 
-const NotificationsSidebar = ({ show, onClose, notifications, onMarkRead, user, onClearAll, onDeleteNotification }) => {
+const NotificationsSidebar = ({ show, onClose, notifications, onMarkRead, onClearAll, onDeleteNotification }) => {
   const [removingIds, setRemovingIds] = useState([]);
 
   useEffect(() => {
