@@ -84,7 +84,12 @@
 
   /* Page container */
   .page-container {
-    @apply max-w-[1400px] w-full mx-auto px-6 py-8;
+    @apply max-w-[1400px] w-full mx-auto px-6 py-8 max-sm:px-3 max-sm:py-5;
+  }
+
+  /* Friends grid in GroupCreate */
+  .friends-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
   }
 
   /* Section title */

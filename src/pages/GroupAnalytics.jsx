@@ -329,7 +329,8 @@ export default function GroupAnalytics() {
             No expenses yet for this group!
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10, minWidth: 480 }}>
             <thead>
               <tr style={{ background: '#f8fafc', color: '#2563eb', fontWeight: 700 }}>
                 <td style={{ padding: '10px 8px' }}>Date</td>
@@ -358,6 +359,7 @@ export default function GroupAnalytics() {
                 ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

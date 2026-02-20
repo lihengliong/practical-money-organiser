@@ -608,24 +608,24 @@ const GroupExpenses = () => {
       {/* Base currency selector */}
               <CurrencySelector />
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-          <h1>{group.name}</h1>
-          <p>{group.memberProfiles?.length || group.members.length} members: {
+          <h1 className="text-2xl font-bold max-sm:text-xl">{group.name}</h1>
+          <p className="text-sm text-gray-500 mt-1">{group.memberProfiles?.length || group.members.length} members: {
             group.memberProfiles
               ? group.memberProfiles.map(m => m.displayName).join(', ')
               : group.members.join(', ')
           }</p>
           {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10 }}>
+            <div className="flex flex-wrap items-center gap-3 mt-3">
               <button
                 onClick={() => navigate('/group-analytics', { state: { group } })}
-                className="btn-primary text-sm py-2 px-5 mb-0"
+                className="btn-primary text-sm py-2 px-5"
               >
                 View Analytics
               </button>
               <button
-                className="btn-danger text-sm py-2 px-5 mb-0"
+                className="btn-danger text-sm py-2 px-5"
                 onClick={deleteGroup}
               >
                 Delete Group
@@ -633,7 +633,7 @@ const GroupExpenses = () => {
             </div>
           )}
         </div>
-        <button onClick={() => navigate('/groups')} className="btn-ghost" style={{ alignSelf: 'flex-start', marginTop: 0 }}>
+        <button onClick={() => navigate('/groups')} className="btn-ghost self-start shrink-0">
           ← Back to Groups
         </button>
       </div>
@@ -645,11 +645,11 @@ const GroupExpenses = () => {
         {error && <div className="error-msg">{error}</div>}
 
         {/* Split Type Selector */}
-        <div className="flex gap-3 mb-2.5">                                              
+        <div className="flex flex-wrap gap-2 mb-2.5">
           {SPLIT_TYPES.map(type => (
             <button
               key={type.key}
-              className={splitType === type.key ? 'bg-gradient-to-r from-green-400 to-cyan-400 text-white border-0 rounded-[22px] px-7 py-2.5 text-lg font-semibold cursor-pointer transition-[background,color,box-shadow] duration-[0.18s] shadow-[0_4px_16px_rgba(183,228,199,0.67)]' : 'bg-gray-100 text-gray-800 border-0 rounded-[22px] px-7 py-2.5 text-lg font-semibold cursor-pointer transition-[background,color,box-shadow] duration-[0.18s] shadow-[0_1px_4px_rgba(183,228,199,0.67)] hover:bg-gray-200 hover:text-gray-900'}
+              className={splitType === type.key ? 'bg-gradient-to-r from-green-400 to-cyan-400 text-white border-0 rounded-[22px] px-5 py-2 text-base font-semibold cursor-pointer transition-[background,color,box-shadow] duration-[0.18s] shadow-[0_4px_16px_rgba(183,228,199,0.67)]' : 'bg-gray-100 text-gray-800 border-0 rounded-[22px] px-5 py-2 text-base font-semibold cursor-pointer transition-[background,color,box-shadow] duration-[0.18s] shadow-[0_1px_4px_rgba(183,228,199,0.67)] hover:bg-gray-200 hover:text-gray-900'}
               onClick={() => setSplitType(type.key)}
             >{type.label}</button>
           ))}
@@ -667,7 +667,7 @@ const GroupExpenses = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2.5 items-end mb-1.5 md:grid-cols-1">
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2.5 items-end mb-1.5">
           <input
             type="text"
             placeholder="What was this expense for?"
@@ -746,8 +746,8 @@ const GroupExpenses = () => {
 
         {/* Improved Split Table UI */}
         {(splitType === 'percent' || splitType === 'exact' || splitType === 'equal') && involved.length > 0 && (
-          <div className="mt-2.5 bg-white rounded-xl shadow-[0_1px_6px_rgba(183,228,199,0.2)] p-2.5 px-2 pb-1">
-            <table className="w-full border-collapse bg-slate-50/60 mb-2.5">
+          <div className="mt-2.5 bg-white rounded-xl shadow-[0_1px_6px_rgba(183,228,199,0.2)] p-2.5 px-2 pb-1 overflow-x-auto">
+            <table className="w-full border-collapse bg-slate-50/60 mb-2.5 min-w-[360px]">
               <thead>
                 <tr>
                   <th className="bg-green-100/60 text-green-700 font-bold rounded-lg rounded-b-none p-2.5 px-3 text-lg">Member</th>
@@ -797,25 +797,28 @@ const GroupExpenses = () => {
                           <input
                             type="range"
                             min="0"
-                            max="100"
+                            max={Math.max(0, 100 - involved.filter(x => x !== m).reduce((s, x) => s + (parseFloat(newExpense.percentSplits[x]) || 0), 0))}
                             step="1"
-                            value={newExpense.percentSplits[m] || ''}
-                            onChange={e => setNewExpense({
-                              ...newExpense,
-                              percentSplits: { ...newExpense.percentSplits, [m]: e.target.value }
-                            })}
+                            value={newExpense.percentSplits[m] || 0}
+                            onChange={e => {
+                              const otherSum = involved.filter(x => x !== m).reduce((s, x) => s + (parseFloat(newExpense.percentSplits[x]) || 0), 0);
+                              const clamped = Math.min(Math.max(0, parseFloat(e.target.value) || 0), 100 - otherSum);
+                              setNewExpense({ ...newExpense, percentSplits: { ...newExpense.percentSplits, [m]: String(clamped) } });
+                            }}
                             className="w-20 mr-2 align-middle"
                           />
                           <input
                             type="number"
                             min="0"
-                            max="100"
+                            max={Math.max(0, 100 - involved.filter(x => x !== m).reduce((s, x) => s + (parseFloat(newExpense.percentSplits[x]) || 0), 0))}
                             step="1"
                             value={newExpense.percentSplits[m] || ''}
-                            onChange={e => setNewExpense({
-                              ...newExpense,
-                              percentSplits: { ...newExpense.percentSplits, [m]: e.target.value }
-                            })}
+                            onChange={e => {
+                              const otherSum = involved.filter(x => x !== m).reduce((s, x) => s + (parseFloat(newExpense.percentSplits[x]) || 0), 0);
+                              const val = parseFloat(e.target.value) || 0;
+                              const clamped = Math.min(Math.max(0, val), 100 - otherSum);
+                              setNewExpense({ ...newExpense, percentSplits: { ...newExpense.percentSplits, [m]: String(clamped) } });
+                            }}
                             className="w-[60px] p-1.5 border border-gray-300 rounded text-base text-right"
                           />%
                         </td>
@@ -825,18 +828,17 @@ const GroupExpenses = () => {
                           <input
                             type="number"
                             min="0"
+                            max={Math.max(0, (parseFloat(newExpense.amount) || 0) - involved.filter(x => x !== m).reduce((s, x) => s + (parseFloat(newExpense.exactSplits[x]) || 0), 0))}
                             step="0.01"
                             value={newExpense.exactSplits[m] || ''}
                             onChange={e => {
                               const value = e.target.value;
-                              // Restrict to 2 decimal places
-                              if (value.includes('.') && value.split('.')[1]?.length > 2) {
-                                return;
-                              }
-                              setNewExpense({
-                                ...newExpense,
-                                exactSplits: { ...newExpense.exactSplits, [m]: value }
-                              });
+                              if (value.includes('.') && value.split('.')[1]?.length > 2) return;
+                              const val = parseFloat(value) || 0;
+                              const totalAmt = parseFloat(newExpense.amount) || 0;
+                              const otherSum = involved.filter(x => x !== m).reduce((s, x) => s + (parseFloat(newExpense.exactSplits[x]) || 0), 0);
+                              const clamped = Math.min(Math.max(0, val), totalAmt - otherSum);
+                              setNewExpense({ ...newExpense, exactSplits: { ...newExpense.exactSplits, [m]: String(clamped) } });
                             }}
                             className="w-[60px] p-1.5 border border-gray-300 rounded text-base text-right"
                           />
@@ -854,9 +856,9 @@ const GroupExpenses = () => {
               </tbody>
               {/* Summary Row */}
               <tfoot>
-                <tr className="font-bold text-gray-900 bg-slate-50 rounded-b-lg rounded-t-none">
-                  <td className="p-2.5 px-3 text-lg"><strong>Total</strong></td>
-                  {splitType === 'percent' && <td className="p-2.5 px-3 text-lg">{involved.reduce((sum, m) => sum + (parseFloat(newExpense.percentSplits[m]) || 0), 0)}%</td>}
+                <tr className="font-bold text-gray-900 bg-slate-50">
+                  <td className="p-2.5 px-3 text-lg"><strong>Assigned</strong></td>
+                  {splitType === 'percent' && <td className="p-2.5 px-3 text-lg">{involved.reduce((sum, m) => sum + (parseFloat(newExpense.percentSplits[m]) || 0), 0).toFixed(0)}%</td>}
                   {splitType === 'exact' && <td className="p-2.5 px-3 text-lg">${involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0).toFixed(2)}</td>}
                   {splitType === 'equal' && <td className="p-2.5 px-3 text-lg">-</td>}
                   <td className="p-2.5 px-3 text-lg">
@@ -865,14 +867,50 @@ const GroupExpenses = () => {
                     {splitType === 'equal' && `$${(parseFloat(newExpense.amount) || 0).toFixed(2)}`}
                   </td>
                 </tr>
+                {(splitType === 'percent' || splitType === 'exact') && (() => {
+                  const totalPct = involved.reduce((sum, m) => sum + (parseFloat(newExpense.percentSplits[m]) || 0), 0);
+                  const totalExact = involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0);
+                  const totalAmt = parseFloat(newExpense.amount) || 0;
+                  const remainingPct = parseFloat((100 - totalPct).toFixed(2));
+                  const remainingExact = parseFloat((totalAmt - totalExact).toFixed(2));
+                  const isComplete = splitType === 'percent' ? remainingPct === 0 : remainingExact === 0;
+                  return (
+                    <tr className={isComplete ? 'text-green-700 bg-green-50 font-bold' : 'text-amber-700 bg-amber-50 font-bold'}>
+                      <td className="p-2.5 px-3 text-base">{isComplete ? '✓ Balanced' : 'Remaining'}</td>
+                      {splitType === 'percent' && <td className="p-2.5 px-3 text-base">{remainingPct}%</td>}
+                      {splitType === 'exact' && <td className="p-2.5 px-3 text-base">${remainingExact.toFixed(2)}</td>}
+                      <td className="p-2.5 px-3 text-base">
+                        {splitType === 'percent' && `$${(remainingPct / 100 * totalAmt).toFixed(2)}`}
+                        {splitType === 'exact' && `$${remainingExact.toFixed(2)}`}
+                      </td>
+                    </tr>
+                  );
+                })()}
               </tfoot>
             </table>
           </div>
         )}
 
-        <button onClick={addExpense} className="btn-primary mt-1.5 self-end">
-          Add Expense
-        </button>
+        {(() => {
+          const totalPct = involved.reduce((sum, m) => sum + (parseFloat(newExpense.percentSplits[m]) || 0), 0);
+          const totalExact = involved.reduce((sum, m) => sum + (parseFloat(newExpense.exactSplits[m]) || 0), 0);
+          const totalAmt = parseFloat(newExpense.amount) || 0;
+          const splitValid =
+            splitType === 'equal' ||
+            (splitType === 'percent' && parseFloat((100 - totalPct).toFixed(2)) === 0) ||
+            (splitType === 'exact' && totalAmt > 0 && parseFloat((totalAmt - totalExact).toFixed(2)) === 0);
+          return (
+            <button
+              onClick={addExpense}
+              disabled={!splitValid}
+              className="btn-primary mt-1.5 self-end w-full lg:w-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+            >
+              {!splitValid && splitType !== 'equal'
+                ? splitType === 'percent' ? 'Percentages must total 100%' : 'Amounts must match total'
+                : 'Add Expense'}
+            </button>
+          );
+        })()}
       </div>
 
       {!hasExpenses ? (
@@ -896,18 +934,14 @@ const GroupExpenses = () => {
               const expenseCurrency = (expense.currency || 'SGD').toUpperCase();
               return (
                 <div key={expense.id} className="card-clickable mb-5">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="expense-title" style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{expense.description}</div>
-                      <div className="expense-category" style={{ fontSize: '0.97em', color: '#8b5cf6', fontWeight: 500, margin: '2px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
-                        {expense.category ? expense.category : 'Other'}
-                      </div>
-                      <div className="expense-payer" style={{ fontSize: '0.97em', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
-                        Paid by: {memberDisplay(expense.paidBy)}
-                      </div>
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{expense.description}</div>
+                      <div className="text-sm text-purple-500 font-medium truncate">{expense.category || 'Other'}</div>
+                      <div className="text-sm text-slate-500 truncate">Paid by: {memberDisplay(expense.paidBy)}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-                      <div className="expense-amount" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.35em', color: '#222', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right font-bold text-lg text-gray-900 whitespace-nowrap">
                         <span>{expense.amount.toFixed(2)} {expenseCurrency}</span>
                       </div>
                       {user && expense.paidBy === user.email && (() => {
@@ -930,7 +964,7 @@ const GroupExpenses = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-1 md:gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8">
           {/* Balances */}
           <div>
             <h2 className="section-title">Current Balances</h2>
@@ -965,13 +999,13 @@ const GroupExpenses = () => {
                 </div>
               ) : (
                 getMinimalSettleUp(balances).map(({ from, to, amount }) => (
-                  <div key={from + to} className="bg-white border border-gray-200 rounded-[10px] my-3 px-5 py-4 flex items-center justify-between shadow-[0_1px_6px_rgba(60,120,80,0.04)] text-lg">
+                  <div key={from + to} className="bg-white border border-gray-200 rounded-[10px] my-3 px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-[0_1px_6px_rgba(60,120,80,0.04)] text-base">
                     <span>
                       <strong>{memberDisplay(from, false)}</strong> owes {amount.toFixed(2)} {baseCurrency} to <strong>{memberDisplay(to, false)}</strong>
                     </span>
-                    <button 
+                    <button
                       onClick={() => recordPayment(from, to, amount)}
-                      className="btn-primary ml-5"
+                      className="btn-primary sm:ml-5 w-full sm:w-auto"
                     >
                       Mark as Paid
                     </button>
@@ -1017,25 +1051,17 @@ const GroupExpenses = () => {
                 
                 return (
                   <div key={expense.id} className="card-clickable mb-5">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0' }}>
-                      {/* Description and payer info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="expense-title" style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{expense.description}</div>
-                        <div className="expense-category" style={{ fontSize: '0.97em', color: '#8b5cf6', fontWeight: 500, margin: '2px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
-                          {expense.category ? expense.category : 'Other'}
-                        </div>
-                        <div className="expense-payer" style={{ fontSize: '0.97em', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
-                          Paid by: {memberDisplay(expense.paidBy)}
-                        </div>
+                    <div className="flex items-center justify-between gap-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{expense.description}</div>
+                        <div className="text-sm text-purple-500 font-medium truncate">{expense.category || 'Other'}</div>
+                        <div className="text-sm text-slate-500 truncate">Paid by: {memberDisplay(expense.paidBy)}</div>
                       </div>
-                      {/* Amount and delete button as a flex row, no truncation */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-                        <div className="expense-amount" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.35em', color: '#222', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right font-bold text-lg text-gray-900 whitespace-nowrap">
                           <span>{displayAmount.toFixed(2)} {displayCurrency}</span>
                         </div>
-                        {/* Delete button, only for the payer and if not settled by payment */}
                         {user && expense.paidBy === user.email && (() => {
-                          // Only show delete if there are no payments, or this expense was created after the earliest payment
                           const expenseCreatedAt = expense.createdAt?.toDate ? expense.createdAt.toDate() : new Date(expense.createdAt);
                           if (earliestPaymentDate && expenseCreatedAt <= earliestPaymentDate) return null;
                           return (
@@ -1097,18 +1123,20 @@ const GroupExpenses = () => {
                 }
                 
                 return (
-                  <div key={payment.id} className="flex items-center justify-between bg-gradient-to-br from-slate-50/80 to-green-100/60 shadow-[0_6px_32px_rgba(60,120,80,0.10)] border-[1.5px] border-gray-200 rounded-[18px] relative my-7 pl-8 min-h-[76px] transition-[box-shadow,transform] duration-[0.22s,0.18s] hover:shadow-[0_12px_48px_rgba(60,120,80,0.18)] hover:-translate-y-[3px] hover:scale-[1.018] hover:bg-gradient-to-br hover:from-green-100/60 hover:to-slate-50/60 before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-3.5 before:h-3.5 before:bg-gradient-to-br before:from-green-600/60 before:to-green-200/60 before:rounded-full before:shadow-[0_2px_8px_rgba(183,228,199,0.67)] before:border-[2.5px] before:border-white before:z-[3]">
-                    <span className="w-12 h-12 text-xl rounded-full border-2 border-green-200 mr-5 shadow-[0_2px_8px_rgba(25,118,210,0.10)] bg-white flex items-center justify-center font-bold z-[2]" style={{background:'#e3f2fd',color:'#1976d2',border:'2px solid #b7e4c7'}}>{getInitials(fromName)}</span>
-                    <span className="flex items-center gap-2 text-lg font-medium">
+                  <div key={payment.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-br from-slate-50/80 to-green-100/60 shadow-[0_6px_32px_rgba(60,120,80,0.10)] border-[1.5px] border-gray-200 rounded-[18px] relative my-4 px-5 py-4 gap-2 transition-[box-shadow,transform] duration-[0.22s,0.18s] hover:shadow-[0_12px_48px_rgba(60,120,80,0.18)] hover:-translate-y-[3px]">
+                    <span className="flex items-center gap-2 text-base font-medium flex-wrap">
+                      <span className="w-9 h-9 text-base rounded-full flex items-center justify-center font-bold shrink-0" style={{background:'#e3f2fd',color:'#1976d2',border:'2px solid #b7e4c7'}}>{getInitials(fromName)}</span>
                       <strong style={{color:'#1976d2'}}>{fromName}</strong>
-                      <span className="text-green-600 text-xl mx-0 font-bold">→</span>
-                      <span className="w-12 h-12 text-xl rounded-full border-2 border-green-200 mr-2 shadow-[0_2px_8px_rgba(25,118,210,0.10)] bg-white flex items-center justify-center font-bold z-[2]" style={{background:'#e8f5e9',color:'#388e3c',marginRight:8,border:'2px solid #b7e4c7'}}>{getInitials(toName)}</span>
+                      <span className="text-green-600 font-bold">→</span>
+                      <span className="w-9 h-9 text-base rounded-full flex items-center justify-center font-bold shrink-0" style={{background:'#e8f5e9',color:'#388e3c',border:'2px solid #b7e4c7'}}>{getInitials(toName)}</span>
                       <strong style={{color:'#388e3c'}}>{toName}</strong>
                     </span>
-                    <span className="text-[1.22em] text-green-900 font-extrabold ml-8 mr-5 tracking-[0.02em] [text-shadow:0_1px_2px_#e8f5e9]">{Number(displayAmount).toFixed(2)} {displayCurrency}</span>
-                    <span className="text-gray-400 text-[0.97em] min-w-[90px] text-right ml-auto italic font-normal opacity-85">
-                      {payment.paymentDate.toDate?.().toLocaleDateString() || 'Recently'}
-                    </span>
+                    <div className="flex items-center justify-between sm:justify-end gap-4">
+                      <span className="text-green-900 font-extrabold tracking-wide">{Number(displayAmount).toFixed(2)} {displayCurrency}</span>
+                      <span className="text-gray-400 text-sm italic">
+                        {payment.paymentDate.toDate?.().toLocaleDateString() || 'Recently'}
+                      </span>
+                    </div>
                   </div>
                 );
               })}

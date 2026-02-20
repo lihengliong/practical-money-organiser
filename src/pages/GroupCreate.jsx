@@ -221,7 +221,7 @@ function GroupCreate() {
   console.log('Rendering GroupCreate component. Friends count:', friends.length, 'Loading:', loadingFriends);
 
   return (
-    <div className="max-w-[1200px] mx-auto my-10 px-5 bg-gradient-to-br from-slate-50 to-slate-200 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] p-10 relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-blue-500 before:via-purple-500 before:to-cyan-500 before:rounded-t-3xl">
+    <div className="max-w-[1200px] mx-auto my-10 max-sm:my-4 px-5 bg-gradient-to-br from-slate-50 to-slate-200 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] p-10 max-sm:p-5 relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-blue-500 before:via-purple-500 before:to-cyan-500 before:rounded-t-3xl">
       {/* Back Button */}
       <button 
         onClick={() => navigate('/groups')} 
@@ -230,7 +230,7 @@ function GroupCreate() {
         ← Back to Groups
       </button>
       
-      <h2 className="text-left mb-9 text-slate-800 text-4xl font-extrabold bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent pb-2.5 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60px] after:h-1 after:bg-gradient-to-r after:from-blue-500 after:to-purple-500 after:rounded-sm">Create a Group</h2>
+      <h2 className="text-left mb-9 text-slate-800 text-4xl max-sm:text-2xl font-extrabold bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent pb-2.5 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60px] after:h-1 after:bg-gradient-to-r after:from-blue-500 after:to-purple-500 after:rounded-sm">Create a Group</h2>
       {error && <div className="error-msg">{error}</div>}
       
       <input
@@ -286,7 +286,7 @@ function GroupCreate() {
       <div className="mb-9 bg-white/60 rounded-[20px] p-8 shadow-[0_8px_25px_rgba(0,0,0,0.05)] backdrop-blur-[10px]">
         <h3 className="text-[1.4rem] font-bold mb-3 text-slate-800 flex items-center gap-2.5 before:content-['📧'] before:text-[1.2rem]">Add Members by Email</h3>
         <p className="text-base text-slate-600 mb-5 font-medium">Add a non-friend by typing their email</p>
-        <div className="flex gap-4 mb-3">
+        <div className="flex flex-col sm:flex-row gap-3 mb-3">
           <input
             type="email"
             placeholder="Enter email address and press Enter"
